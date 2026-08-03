@@ -1,0 +1,20 @@
+{
+  "name": "aurelia-sample-first-storefront",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/import-products.mjs && vite",
+    "build": "node scripts/import-products.mjs && vite build",
+    "preview": "vite preview",
+    "import:products": "node scripts/import-products.mjs"
+  },
+  "dependencies": {
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "vite": "7.1.0",
+    "xlsx": "0.18.5"
+  }
+}
