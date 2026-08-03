@@ -6,7 +6,7 @@ Replace:
 
 `data/products.xlsx`
 
-with your real Excel workbook, or copy your rows into the included workbook's `Products` sheet.
+with your real Excel workbook, or copy your rows into the included workbook's `Products` sheet. `data/products-template.xlsx` is a clean starting point if you'd rather build up from a blank sheet.
 
 Required minimum:
 
@@ -20,9 +20,9 @@ Use `|` between multiple values:
 
 `Bergamot | Lavender | Amber`
 
-## 2. Add actual product images
+## 2. Add actual product images (optional — can be done later)
 
-Preferred method:
+No images are required to deploy today. Every bottle image falls back automatically to the built-in illustrated CSS bottle when none is supplied. Add real photography whenever it's ready:
 
 1. Export each product picture as PNG, JPG or WebP.
 2. Put the files in `public/images/products/`.
@@ -71,6 +71,14 @@ In Vercel:
 ## 5. Update products later
 
 Edit `data/products.xlsx`, add or replace images, commit and push. Vercel will automatically rebuild the site.
+
+## 6. Run the automated checks
+
+```bash
+npm run import:products
+npm run build
+npm test
+```
 
 ## Prototype limitation
 

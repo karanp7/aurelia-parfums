@@ -1,7 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import * as XLSX from 'xlsx';
+import * as XLSX_NS from 'xlsx';
+
+// The xlsx package's ESM named exports don't include readFile/writeFile in this
+// version — those live on the CJS-style default export. Fall back gracefully
+// either way so this keeps working across xlsx releases.
+const XLSX = XLSX_NS.readFile ? XLSX_NS : XLSX_NS.default;
 
 const root = process.cwd();
 const source = process.argv[2] || path.join(root, 'data', 'products.xlsx');
@@ -27,14 +32,27 @@ const list = (value) => clean(value).split('|').map((item) => item.trim()).filte
 const slugify = (value) => clean(value).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
 const toneForFamily = (family) => ({
-  Floral: 'rose', Woody: 'amber', Fresh: 'blue', Gourmand: 'cream', Fruity: 'plum', Amber: 'amber', Citrus: 'blue', Musk: 'cream'
+  Floral: 'rose', Woody: 'amber', Fresh: 'blue', Gourmand: 'cream', Fruity: 'plum', Amber: 'amber', Citrus: 'blue', Musk: 'cream', Chypre: 'red', Oriental: 'plum'
 }[family] || 'rose');
+
+const seenIds = new Set();
+const uniqueId = (base) => {
+  let id = base;
+  let counter = 2;
+  while (seenIds.has(id)) {
+    id = `${base}-${counter}`;
+    counter += 1;
+  }
+  seenIds.add(id);
+  return id;
+};
 
 const products = rows
   .filter((row) => clean(row.Active).toLowerCase() !== 'no')
   .filter((row) => clean(row.Name))
   .map((row, index) => {
-    const id = slugify(row.ID || row.Name) || `product-${index + 1}`;
+    const rowNumber = index + 2; // account for header row
+    const id = uniqueId(slugify(row.ID || row.Name) || `product-${rowNumber}`);
     const family = clean(row.Family) || 'Other';
     const sizes = [
       ['30 ml', row['30ml Price']],
@@ -43,7 +61,10 @@ const products = rows
     ].filter(([, price]) => number(price, 0) > 0).map(([label, price]) => ({ label, price: number(price) }));
 
     if (!sizes.length) {
-      throw new Error(`Row ${index + 2} (${row.Name}) has no valid size price.`);
+      throw new Error(
+        `Row ${rowNumber} ("${clean(row.Name) || 'unnamed product'}") has no valid size price. ` +
+        `Fill in at least one of "30ml Price", "50ml Price" or "100ml Price" with a number greater than 0.`
+      );
     }
 
     const imageUrl = clean(row['Image URL']);
@@ -67,7 +88,7 @@ const products = rows
         heart: list(row['Heart Notes']),
         base: list(row['Base Notes']),
       },
-      summary: clean(row.Summary),
+      summary: clean(row.Summary) || clean(row.Description),
       description: clean(row.Description) || clean(row.Summary),
       image,
       imageAlt: `${clean(row.Brand)} ${clean(row.Name)} perfume bottle`.trim(),
@@ -86,6 +107,20 @@ const products = rows
 if (!products.length) {
   console.error(`No active product rows found in sheet "${sheetName}".`);
   process.exit(1);
+}
+
+// Every mood offered as a quiz answer option (see MOOD_OPTIONS in src/App.jsx).
+// If the workbook introduces a product mood outside this list, the quiz's
+// "how should it feel" question simply won't be able to award mood points for
+// it — it can still surface on family/intensity scoring alone. This is
+// surfaced here (not just in the app) so it's visible at import time.
+const QUIZ_MOOD_OPTIONS = ['Elegant', 'Confident', 'Energizing', 'Comforting', 'Magnetic', 'Romantic'];
+const unmatchedMoods = [...new Set(products.map((product) => product.mood).filter((mood) => !QUIZ_MOOD_OPTIONS.includes(mood)))];
+if (unmatchedMoods.length) {
+  console.warn(
+    `Note: these product moods aren't offered as quiz answers and won't score mood points: ${unmatchedMoods.join(', ')}. ` +
+    `Add them to QUIZ_MOOD_OPTIONS in src/App.jsx if you want the quiz to be able to fully match them.`
+  );
 }
 
 const discoverySet = {
