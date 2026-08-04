@@ -59,6 +59,13 @@
 /* L-05: related products inside the product modal, same family first. */
 .related-rail{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:var(--space-2)}.related-card{border:1px solid var(--line);border-radius:14px;padding:0;background:transparent;overflow:hidden;text-align:center}.related-art{height:120px;display:grid;place-items:center;overflow:hidden}.related-art .bottle-scene{transform:scale(.4)}.related-art .product-photo-shell{width:70%;height:78%}.related-card span{display:block;font-size:11px;padding:10px 6px;border-top:1px solid var(--line)}
 
+/* Shopify integration: config-missing screen and inline cart-mutation errors */
+.setup-notice{max-width:560px;margin:0 auto;padding:180px 24px 140px;text-align:center}
+.setup-notice h1{font-size:clamp(32px,5vw,46px);margin:18px 0}
+.setup-notice p{color:var(--muted);line-height:1.7;font-size:14px}
+.setup-notice code{background:var(--cream);border-radius:6px;padding:2px 7px;font-size:12px}
+.cart-error{background:#fbe3df;border:1px solid #d9847733;color:#7a2f1f;border-radius:10px;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:16px}
+
 /* Real product photography loaded from Excel */
 .product-photo-shell{width:min(78%,360px);height:82%;display:grid;place-items:center;position:relative;background:transparent!important}
 .product-photo{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 28px 28px rgba(30,20,18,.18));transition:transform .45s var(--ease)}

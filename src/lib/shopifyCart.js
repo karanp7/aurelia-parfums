@@ -8,8 +8,10 @@ export const CART_ID_STORAGE_KEY = 'aurelia:shopify-cart-id';
 // at checkout. The (non-hidden) "Matches" attribute intentionally *does*
 // show at checkout, so the customer sees their three matched fragrances and
 // fulfillment can read them off the order, per SHOPIFY_IMPLEMENTATION.md.
-export const DISCOVERY_LINE_ATTRIBUTE_KEY = '_type';
+export const LINE_TYPE_ATTRIBUTE_KEY = '_type';
+export const DISCOVERY_LINE_ATTRIBUTE_KEY = LINE_TYPE_ATTRIBUTE_KEY; // back-compat alias
 export const DISCOVERY_LINE_ATTRIBUTE_VALUE = 'discovery-set';
+export const GIFT_WRAP_LINE_ATTRIBUTE_VALUE = 'gift-wrap';
 export const MATCHES_ATTRIBUTE_KEY = 'Matches';
 
 const CART_FIELDS = `
@@ -106,14 +108,17 @@ export function mapShopifyCart(cart) {
     attributes: cart.attributes || [],
     lines: (cart.lines?.nodes || []).map((line) => {
       const attributes = line.attributes || [];
-      const isDiscoverySet = attributes.some(
-        (attribute) => attribute.key === DISCOVERY_LINE_ATTRIBUTE_KEY && attribute.value === DISCOVERY_LINE_ATTRIBUTE_VALUE
-      );
+      const typeValue = attributes.find((attribute) => attribute.key === LINE_TYPE_ATTRIBUTE_KEY)?.value;
+      const type = typeValue === DISCOVERY_LINE_ATTRIBUTE_VALUE
+        ? 'discovery'
+        : typeValue === GIFT_WRAP_LINE_ATTRIBUTE_VALUE
+          ? 'gift-wrap'
+          : 'bottle';
       const matches = attributes.find((attribute) => attribute.key === MATCHES_ATTRIBUTE_KEY)?.value;
       return {
         lineId: line.id,
         quantity: line.quantity,
-        type: isDiscoverySet ? 'discovery' : 'bottle',
+        type,
         matches: matches ? matches.split(', ') : null,
         name: line.merchandise?.product?.title || line.merchandise?.title,
         handle: line.merchandise?.product?.handle,

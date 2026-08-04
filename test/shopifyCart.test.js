@@ -75,6 +75,27 @@ test('mapShopifyCart treats a line with no discovery attribute as a regular bott
   assert.equal(cart.lines[0].size, '50 ml');
 });
 
+test('mapShopifyCart recognizes a gift-wrap line via the same _type attribute mechanism', () => {
+  const cart = mapShopifyCart(rawCart({
+    lines: {
+      nodes: [{
+        id: 'gid://shopify/CartLine/3',
+        quantity: 1,
+        attributes: [{ key: '_type', value: 'gift-wrap' }],
+        cost: { totalAmount: { amount: '8.00' } },
+        merchandise: {
+          id: 'gid://shopify/ProductVariant/3',
+          title: 'Default Title',
+          image: null,
+          price: { amount: '8.00' },
+          product: { title: 'Gift Wrap', handle: 'gift-wrap' }
+        }
+      }]
+    }
+  }));
+  assert.equal(cart.lines[0].type, 'gift-wrap');
+});
+
 test('mapShopifyCart returns null for a missing cart instead of throwing', () => {
   assert.equal(mapShopifyCart(null), null);
 });

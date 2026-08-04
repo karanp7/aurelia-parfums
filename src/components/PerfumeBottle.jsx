@@ -1,27 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
+// Shopify's CDN resizes on the fly via a `width` query param on its own
+// image URLs — this replaces the old build-time PNG->WebP pipeline (H-03),
+// which only made sense for locally-hosted files, not Shopify CDN images.
+function withWidth(url, width) {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set('width', width);
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
 
 export default function PerfumeBottle({ tone = 'rose', compact = false, image = '', alt = 'Perfume bottle' }) {
   const [imageFailed, setImageFailed] = useState(false);
 
+  // Switching products (e.g. the related-products rail inside the product
+  // modal) reuses this same component instance — reset the failure flag so
+  // a previous product's broken image doesn't stick to the next one.
+  useEffect(() => setImageFailed(false), [image]);
+
   if (image && !imageFailed) {
-    // H-03 fix: product photos previously shipped as full-size PNGs only
-    // (one was 1.16 MB). Every PNG imported from the Excel pipeline now has a
-    // compressed WebP sibling generated alongside it — this prefers that and
-    // falls back to the (also recompressed) PNG for browsers that don't
-    // support WebP.
-    const webp = image.replace(/\.png$/i, '.webp');
     return (
       <div className={`product-photo-shell tone-${tone} ${compact ? 'compact-photo' : ''}`}>
-        <picture>
-          <source srcSet={webp} type="image/webp" />
-          <img
-            className="product-photo"
-            src={image}
-            alt={alt}
-            loading={compact ? 'lazy' : 'eager'}
-            onError={() => setImageFailed(true)}
-          />
-        </picture>
+        <img
+          className="product-photo"
+          src={withWidth(image, compact ? 400 : 900)}
+          alt={alt}
+          loading={compact ? 'lazy' : 'eager'}
+          onError={() => setImageFailed(true)}
+        />
       </div>
     );
   }
