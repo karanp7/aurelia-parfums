@@ -356,7 +356,7 @@ function App() {
       <main id="top" className="setup-notice">
         <p className="overline dark">Setup needed</p>
         <h1 className="display">Connect Shopify to go live.</h1>
-        <p>Set <code>VITE_SHOPIFY_STORE_DOMAIN</code> and <code>VITE_SHOPIFY_STOREFRONT_TOKEN</code> — in Vercel's Project Settings for production, or in a local <code>.env.local</code> for development (see <code>.env.example</code>) — then reload.</p>
+        <p>Set <code>SHOPIFY_STORE_DOMAIN</code> and <code>SHOPIFY_STOREFRONT_ACCESS_TOKEN</code> — in Vercel's Project Settings for production, or in a local <code>.env.local</code> for development (see <code>.env.example</code>) — then reload.</p>
       </main>
     </div>;
   }

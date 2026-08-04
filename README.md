@@ -14,16 +14,18 @@ Open the Vite URL, normally `http://localhost:5173`. Without valid Shopify env v
 
 ## 1. Connect Shopify
 
-Two environment variables, both required, both prefixed `VITE_` so Vite exposes them to the browser:
+Two environment variables, both required:
 
 | Variable | Value |
 |---|---|
-| `VITE_SHOPIFY_STORE_DOMAIN` | Your `*.myshopify.com` domain — not a custom domain |
-| `VITE_SHOPIFY_STOREFRONT_TOKEN` | The **public** Storefront API access token (Headless channel → Storefront API client, or a custom app's Storefront API token) |
+| `SHOPIFY_STORE_DOMAIN` | Your `*.myshopify.com` domain — not a custom domain |
+| `SHOPIFY_STOREFRONT_ACCESS_TOKEN` | The **public** Storefront API access token (Headless channel → Storefront API client, or a custom app's Storefront API token) |
+
+These deliberately don't use Vite's `VITE_` prefix convention (Vite only auto-exposes `VITE_`-prefixed vars to browser code). Instead, `vite.config.js` explicitly inlines just these two into the client bundle at build time via `define` — see the comments there and in `src/lib/shopify.js`.
 
 Set both in **Vercel → Project Settings → Environment Variables** for production, and in a local `.env.local` (gitignored, copy from `.env.example`) for development.
 
-Never put an Admin API token here — the Storefront token is specifically designed to be safe in client-side code; an Admin token is not.
+If you also have `SHOPIFY_STOREFRONT_PRIVATE_TOKEN` set in Vercel (for something else), leave it alone — it is never read by this app, and never should be. A private Storefront API token (or an Admin API token) must never ship in client-side code; only the public access token above is designed to be safe there.
 
 ## 2. Create two small products in Shopify
 
