@@ -184,6 +184,17 @@ function App() {
   const closeQuiz = () => { setQuizOpen(false); setQuizStep(0); setQuizAnswers({}); };
   const answerQuiz = (value) => { setQuizAnswers((current) => ({ ...current, [quizStep]: value })); setQuizStep((step) => step + 1); };
 
+  // The hero's bouncing bottle previously always rendered the illustrated
+  // placeholder (tone="rose", no image), regardless of the catalog. It now
+  // shows whichever product is tagged "Bestseller" in the Excel `Badge`
+  // column, falling back to the highest-rated / most-reviewed product if no
+  // row is marked that way, so uploaded product photos actually appear here.
+  const heroProduct = useMemo(() => {
+    const bestseller = perfumes.find((product) => product.badge?.toLowerCase() === 'bestseller');
+    if (bestseller) return bestseller;
+    return [...perfumes].sort((a, b) => (b.rating - a.rating) || (b.reviews - a.reviews))[0] || null;
+  }, []);
+
   const menuDialogRef = useDialogA11y(menuOpen, () => setMenuOpen(false));
   const productDialogRef = useDialogA11y(Boolean(activeProduct), () => setActiveProduct(null));
   const quizDialogRef = useDialogA11y(quizOpen, closeQuiz);
@@ -213,7 +224,13 @@ function App() {
         </div>
         <div className="hero-stage" aria-hidden="true">
           <div className="halo" />
-          <div className="hero-bottle"><PerfumeBottle tone="rose" /></div>
+          <div className="hero-bottle">
+            <PerfumeBottle
+              tone={heroProduct?.tone || 'rose'}
+              image={heroProduct?.image}
+              alt={heroProduct?.imageAlt || heroProduct?.name || 'Perfume bottle'}
+            />
+          </div>
           <div className="sample-vial sample-one"/><div className="sample-vial sample-two"/><div className="sample-vial sample-three"/>
         </div>
       </section>
