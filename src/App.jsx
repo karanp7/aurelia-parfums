@@ -668,6 +668,7 @@ function App() {
         onBack={closeProduct}
         onSampleFirst={() => { closeProduct(); setQuizOpen(true); }}
         relatedProducts={relatedProducts}
+        recentlyViewedProducts={recentlyViewedProducts.filter((item) => item.id !== activeProduct.id)}
         wishlist={wishlist}
         toggleWishlist={toggleWishlist}
         openProduct={openProduct}

@@ -75,7 +75,7 @@ const WHY_BUY_ITEMS = [
 
 export default function ProductDetailPage({
   product, selectedSize, onSelectSize, mutating, addBottle, buyNow, onBack, onSampleFirst,
-  relatedProducts, wishlist, toggleWishlist, openProduct
+  relatedProducts, recentlyViewedProducts, wishlist, toggleWishlist, openProduct
 }) {
   const [quantity, setQuantity] = useState(1);
   const prefersReducedMotion = useReducedMotion();
@@ -205,26 +205,6 @@ export default function ProductDetailPage({
               </ul>
             </div>
           </div>
-
-          {relatedProducts.length > 0 && (
-            <div className="related-rail">
-              <p className="overline dark">You may also like</p>
-              <div className="rail-row">
-                {relatedProducts.map((related) => (
-                  <ProductCard
-                    key={related.id}
-                    product={related}
-                    size="rail"
-                    mutating={mutating}
-                    wishlisted={wishlist.includes(related.id)}
-                    onToggleWishlist={toggleWishlist}
-                    onOpen={openProduct}
-                    onQuickAdd={addBottle}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -315,6 +295,46 @@ export default function ProductDetailPage({
         </div>
         <p className="reviews-empty">No reviews yet for this fragrance.</p>
       </section>
+
+      {relatedProducts.length > 0 && (
+        <section className="rail-section related-rail">
+          <p className="overline dark">You may also like</p>
+          <div className="rail-row">
+            {relatedProducts.map((related) => (
+              <ProductCard
+                key={related.id}
+                product={related}
+                size="rail"
+                mutating={mutating}
+                wishlisted={wishlist.includes(related.id)}
+                onToggleWishlist={toggleWishlist}
+                onOpen={openProduct}
+                onQuickAdd={addBottle}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {recentlyViewedProducts.length > 0 && (
+        <section className="rail-section recently-viewed-rail">
+          <p className="overline dark">Recently viewed</p>
+          <div className="rail-row">
+            {recentlyViewedProducts.map((viewed) => (
+              <ProductCard
+                key={viewed.id}
+                product={viewed}
+                size="rail"
+                mutating={mutating}
+                wishlisted={wishlist.includes(viewed.id)}
+                onToggleWishlist={toggleWishlist}
+                onOpen={openProduct}
+                onQuickAdd={addBottle}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
