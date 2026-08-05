@@ -315,6 +315,17 @@ function App() {
     return [...seen.values()];
   }, [products]);
 
+  // Best Sellers: reuses the already-fetched `products` array (no new
+  // fetch) — an explicit "Bestseller" tag wins a slot first, the rest fill
+  // from the front of the list, which is already real-sales-ordered via
+  // sortKey: BEST_SELLING in shopifyProducts.js. Never a separate curated
+  // list to fall out of sync with the actual catalog.
+  const bestSellers = useMemo(() => {
+    const tagged = products.filter((product) => product.badge === 'Bestseller');
+    const rest = products.filter((product) => product.badge !== 'Bestseller');
+    return [...tagged, ...rest].slice(0, 5);
+  }, [products]);
+
   const shopByTerm = (term) => {
     setSearch(term);
     setFamily('All');
@@ -535,6 +546,21 @@ function App() {
         <div><strong>Fast U.S. Shipping</strong><span>Ground delivery, fragrance-safe fulfillment</span></div>
         <div><strong>Luxury Gift Packaging</strong><span>Optional gift wrap at checkout</span></div>
         <div><strong>30-Day Easy Returns</strong><span>Unopened bottles, no questions asked</span></div>
+      </section>
+
+      <section id="best-sellers" className="bestsellers-section" data-reveal>
+        <div className="collection-head"><div><p className="overline dark">Best sellers</p><h2>What Aurelia customers reach for first.</h2></div><Button variant="text" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}>View all <Icon>→</Icon></Button></div>
+        {bestSellers.length > 0 && <div className="bestsellers-grid">
+          {bestSellers.map((product) => <ProductCard
+            key={product.id}
+            product={product}
+            mutating={mutating}
+            wishlisted={wishlist.includes(product.id)}
+            onToggleWishlist={toggleWishlist}
+            onOpen={openProduct}
+            onQuickAdd={(p) => addBottle(p, p.sizes.find((size) => size.availableForSale)?.label)}
+          />)}
+        </div>}
       </section>
 
       <section id="discovery" className="discovery-story" data-reveal>

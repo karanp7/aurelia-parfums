@@ -28,6 +28,13 @@
 /* P1 fix (#11): badge tag was 8px, now 10px. */
 .tag{background:rgba(255,255,255,.78);backdrop-filter:blur(10px);border-radius:999px;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.12em}
 .tag-shipping{background:var(--sand);color:var(--graphite)}.bottle-wrap{position:absolute;inset:0;display:grid;place-items:center;transition:.6s var(--ease)}.product-image:hover .bottle-wrap{transform:translateY(-10px) scale(1.025)}.view-hint{position:absolute;bottom:16px;left:50%;transform:translate(-50%,15px);opacity:0;background:var(--ink);color:white;border-radius:999px;padding:10px 15px;font-size:10px;transition:.35s var(--ease)}.product-image:hover .view-hint{transform:translate(-50%,0);opacity:1}.product-info{padding:20px 5px 30px}.product-info>p{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted)}.product-info h3{font:400 30px 'Italiana',serif;margin:5px 0 10px}.product-info>span{display:block;font-size:13px;line-height:1.6;color:var(--muted);min-height:42px}.card-review{font-size:10px;margin:13px 0}.card-review small{color:var(--muted);margin-left:5px}.product-info>div:last-child{display:flex;justify-content:space-between;align-items:center;margin-top:18px}.product-info>div:last-child button{border:0;background:none;font-size:10px;text-decoration:underline}
+/* Phase 2, Milestone 2: Best Sellers — reuses ProductCard, own grid density */
+.bestsellers-section{padding:var(--space-7) 6vw}
+.bestsellers-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:var(--space-5)}
+@media(max-width:1000px){.bestsellers-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:800px){.bestsellers-section{padding:95px 18px}.bestsellers-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:430px){.bestsellers-grid{grid-template-columns:1fr}}
+
 /* Phase 2, Milestone 1: announcement bar + expanded nav dropdown */
 .announcement-bar{position:fixed;top:0;left:0;right:0;z-index:31;height:36px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;gap:28px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:0 18px;overflow:hidden;white-space:nowrap}
 .shop-dropdown{position:relative}
