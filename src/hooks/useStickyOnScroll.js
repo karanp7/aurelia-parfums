@@ -16,11 +16,18 @@ import { useEffect, useRef, useState } from 'react';
 // Attach `ref` to the element that should pin, add an `is-pinned` class
 // (or similar) when `pinned` is true, and apply `style={{ height }}` only
 // while pinned so the element's normal-flow space doesn't collapse.
+//
+// Also returns `left`/`width` (the element's own horizontal position/size
+// right before it pinned) for callers — like the Product Detail Page's
+// purchase box, which only occupies one column rather than the full
+// viewport width like the Collection filter bar — that need to lock their
+// fixed-position box to the same horizontal space it occupied in flow,
+// the same way real `position: sticky` would.
 export function useStickyOnScroll(offset) {
   const ref = useRef(null);
   const naturalTopRef = useRef(null);
   const [pinned, setPinned] = useState(false);
-  const [height, setHeight] = useState(0);
+  const [rect, setRect] = useState({ height: 0, left: 0, width: 0 });
 
   useEffect(() => {
     // Keep re-measuring on every tick while unpinned — async image/webfont
@@ -32,8 +39,9 @@ export function useStickyOnScroll(offset) {
     // corrupt it.
     const measure = () => {
       if (!ref.current) return;
-      naturalTopRef.current = ref.current.getBoundingClientRect().top + window.scrollY;
-      setHeight(ref.current.offsetHeight);
+      const box = ref.current.getBoundingClientRect();
+      naturalTopRef.current = box.top + window.scrollY;
+      setRect({ height: box.height, left: box.left, width: box.width });
     };
     const onScroll = () => {
       if (!pinned) measure();
@@ -50,5 +58,5 @@ export function useStickyOnScroll(offset) {
     };
   }, [pinned, offset]);
 
-  return { ref, pinned, height };
+  return { ref, pinned, height: rect.height, left: rect.left, width: rect.width };
 }

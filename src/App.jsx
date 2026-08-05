@@ -466,16 +466,41 @@ function App() {
     }
   }
 
-  const addBottle = async (product, sizeLabel) => {
+  // `quantity` defaults to 1 so every existing call site (grid/rail Quick
+  // Add, "Add to bag") keeps working unchanged; the Product Detail Page's
+  // quantity selector is the only caller that passes something else.
+  //
+  // No longer calls closeProduct() after adding — that made sense when the
+  // product modal was an overlay (closing it returned you to the page
+  // underneath), but now product detail is a real page, and navigating a
+  // shopper away from it right after they add to bag would undo the point
+  // of staying to browse/checkout from there.
+  const addBottle = async (product, sizeLabel, quantity = 1) => {
     if (!cart) return;
     const variant = product.sizes.find((size) => size.label === sizeLabel) || product.sizes[0];
     if (!variant) return;
     try {
-      await runCartMutation(() => addCartLine(cart.id, { merchandiseId: variant.variantId, quantity: 1 }));
+      await runCartMutation(() => addCartLine(cart.id, { merchandiseId: variant.variantId, quantity }));
       setCartOpen(true);
-      closeProduct();
     } catch {
       // cartError is already set and surfaced in the cart drawer
+    }
+  };
+
+  // "Buy Now" skips the cart drawer entirely and sends the shopper straight
+  // to Shopify's real hosted checkout with just this line in the cart -
+  // reuses the exact same mutation as Add to Bag, just redirects on success
+  // instead of opening the drawer.
+  const buyNow = async (product, sizeLabel, quantity = 1) => {
+    if (!cart) return;
+    const variant = product.sizes.find((size) => size.label === sizeLabel) || product.sizes[0];
+    if (!variant) return;
+    try {
+      const updatedCart = await runCartMutation(() => addCartLine(cart.id, { merchandiseId: variant.variantId, quantity }));
+      if (updatedCart?.checkoutUrl) window.location.href = updatedCart.checkoutUrl;
+    } catch {
+      // cartError is already set; with no drawer open here, the shopper
+      // stays on the product page and can retry Add to Bag/Buy Now.
     }
   };
 
@@ -639,6 +664,7 @@ function App() {
         onSelectSize={setSelectedSize}
         mutating={mutating}
         addBottle={addBottle}
+        buyNow={buyNow}
         onBack={closeProduct}
         onSampleFirst={() => { closeProduct(); setQuizOpen(true); }}
         relatedProducts={relatedProducts}
