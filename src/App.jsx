@@ -698,7 +698,10 @@ function App() {
           <Button variant="secondary" type="submit">Sign up</Button>
         </div>}
       </form>
-      <p>Storefront by Aurelia Parfums · Powered by Shopify.</p>
+      <p>
+        <span>Storefront by Aurelia Parfums · Powered by Shopify.</span>
+        <span className="payment-badges"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span><span>Shop Pay</span></span>
+      </p>
     </footer>
 
     {menuOpen && <Dialog overlayClassName="menu-overlay" label="Mobile menu" dialogRef={menuDialogRef}><DialogClose onClick={() => setMenuOpen(false)} /><nav><a onClick={() => setMenuOpen(false)} href="#discovery">Discovery sets</a><a onClick={() => setMenuOpen(false)} href="#collection">Shop fragrances</a><a onClick={() => setMenuOpen(false)} href="#gifts">Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></Dialog>}
