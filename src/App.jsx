@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useLocation, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
+import HeroMedia from './components/HeroMedia.jsx';
 import Button from './components/Button.jsx';
 import Dialog, { DialogClose } from './components/Dialog.jsx';
 import LoadingSkeleton, { CollectionHeaderSkeleton, FilterBarSkeleton } from './components/LoadingSkeleton.jsx';
@@ -694,16 +695,8 @@ function App() {
           </div>
           <p className="hero-proof">100% Authentic · Ground shipping within the contiguous U.S.</p>
         </div>
-        <div className="hero-stage" aria-hidden="true">
-          <div className="halo" />
-          <div className="hero-bottle">
-            <PerfumeBottle
-              tone={heroProduct?.tone || 'rose'}
-              image={heroProduct?.image}
-              alt={heroProduct?.imageAlt || heroProduct?.name || 'Perfume bottle'}
-            />
-          </div>
-          <div className="sample-vial sample-one"/><div className="sample-vial sample-two"/><div className="sample-vial sample-three"/>
+        <div className="hero-stage">
+          <HeroMedia product={heroProduct} />
         </div>
       </section>
 
