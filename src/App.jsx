@@ -3,7 +3,7 @@ import { useNavigate, useLocation, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import Button from './components/Button.jsx';
 import Dialog, { DialogClose } from './components/Dialog.jsx';
-import LoadingSkeleton from './components/LoadingSkeleton.jsx';
+import LoadingSkeleton, { CollectionHeaderSkeleton, FilterBarSkeleton } from './components/LoadingSkeleton.jsx';
 import EmptyState from './components/EmptyState.jsx';
 import ProductCard from './components/ProductCard.jsx';
 import FilterBar, { PRICE_BUCKETS } from './components/FilterBar.jsx';
@@ -322,6 +322,12 @@ function App() {
   // category — "Woody Fragrances" only ever appears if products in that
   // real family exist in the catalog.
   const collectionHeading = family === 'All' ? 'All Fragrances' : `${family} Fragrances`;
+
+  // Only the very first fetch has nothing real to show for the header/filter
+  // bar (their content - family/brand/size options - is itself derived from
+  // `products`). A later sort-triggered refetch keeps them visible and only
+  // re-skeletons the grid, so re-sorting doesn't flash the whole section.
+  const firstLoad = productsLoading && products.length === 0;
 
   const filtered = useMemo(() => products.filter((product) => {
     const searchable = [product.name, product.house, product.family, product.summary, product.description, ...(product.tags || [])]
@@ -698,13 +704,15 @@ function App() {
       </section>
 
       <section id="collection" className="collection" data-reveal>
-        <nav className="breadcrumb" aria-label="Breadcrumb">
-          <a href="#top">Home</a><span aria-hidden="true">/</span>
-          <a href="#collection">Shop</a><span aria-hidden="true">/</span>
-          <span aria-current="page">{collectionHeading}</span>
-        </nav>
-        <div className="collection-head"><div><p className="overline dark">{family === 'All' ? 'Full bottles' : family}</p><h2>{collectionHeading}</h2></div><p>Discover authentic designer fragrances at exceptional prices.</p></div>
-        <FilterBar
+        {firstLoad ? <CollectionHeaderSkeleton /> : <>
+          <nav className="breadcrumb" aria-label="Breadcrumb">
+            <a href="#top">Home</a><span aria-hidden="true">/</span>
+            <a href="#collection">Shop</a><span aria-hidden="true">/</span>
+            <span aria-current="page">{collectionHeading}</span>
+          </nav>
+          <div className="collection-head"><div><p className="overline dark">{family === 'All' ? 'Full bottles' : family}</p><h2>{collectionHeading}</h2></div><p>Discover authentic designer fragrances at exceptional prices.</p></div>
+        </>}
+        {firstLoad ? <FilterBarSkeleton /> : <FilterBar
           searchInputRef={searchInputRef}
           search={search} onSearchChange={setSearch}
           family={family} familyOptions={familyOptions} onFamilyChange={setFamily}
@@ -713,8 +721,8 @@ function App() {
           availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
           sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
           sort={sort} sortOptions={Object.entries(SORT_OPTIONS).map(([value, option]) => ({ value, label: option.label }))} onSortChange={setSort}
-        />
-        {productsLoading ? <LoadingSkeleton count={6} />
+        />}
+        {productsLoading ? <LoadingSkeleton count={8} />
           : productsError ? <EmptyState title="Couldn't load the catalog." description={productsError} />
           : filtered.length ? <div className="product-grid">
           {filtered.map((product) => <ProductCard
