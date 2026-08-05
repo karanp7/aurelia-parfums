@@ -75,6 +75,15 @@
 .instagram-row a:hover img{transform:scale(1.06)}
 
 /* Luxury design-system pass: card badges wrapper, wishlist toggle, real compare-at pricing */
+.card-eyebrow{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--wine);margin-bottom:10px}
+.quick-size-picker{overflow:hidden;display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.quick-size-picker button{width:100%;text-align:left;border:1px solid var(--line);background:transparent;border-radius:10px;padding:9px 12px;font-size:11px;transition:.2s var(--ease)}
+.quick-size-picker button:hover{border-color:var(--ink)}
+.product-card--rail{width:min(240px,72vw);flex:0 0 auto}
+.product-card--rail .product-image{height:300px}
+.product-card--rail .product-info{padding:16px 4px 22px}
+.product-card--rail .product-info h3{font-size:22px;margin:4px 0 6px}
+.product-card--rail .product-info>span{min-height:0;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
 .card-badges{position:absolute;top:18px;left:18px;z-index:2;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .wishlist-btn{position:absolute;top:14px;right:14px;z-index:3;width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.82);backdrop-filter:blur(10px);display:grid;place-items:center;font-size:16px;color:var(--ink);box-shadow:var(--shadow-soft)}
 .wishlist-btn.active{color:var(--champagne)}

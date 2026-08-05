@@ -566,7 +566,7 @@ function App() {
             wishlisted={wishlist.includes(product.id)}
             onToggleWishlist={toggleWishlist}
             onOpen={openProduct}
-            onQuickAdd={(p) => addBottle(p, p.sizes.find((size) => size.availableForSale)?.label)}
+            onQuickAdd={addBottle}
           />)}
         </div>}
       </section>
@@ -662,7 +662,7 @@ function App() {
             wishlisted={wishlist.includes(product.id)}
             onToggleWishlist={toggleWishlist}
             onOpen={openProduct}
-            onQuickAdd={(p) => addBottle(p, p.sizes.find((size) => size.availableForSale)?.label)}
+            onQuickAdd={addBottle}
           />)}
         </div> : wishlistFilterOn ? <EmptyState
           title="You haven't saved any fragrances yet."

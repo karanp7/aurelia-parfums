@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import PerfumeBottle from './PerfumeBottle.jsx';
 import Badge from './Badge.jsx';
 
@@ -15,15 +15,32 @@ const FREE_SHIPPING_THRESHOLD = 100;
 // for free — duplicating that in Framer Motion risks two engines fighting
 // over the same transform. Framer Motion is used here only for genuinely new
 // interactions CSS :hover can't express as naturally: press feedback on
-// Quick Add and a spring "pop" on the wishlist toggle.
-export default function ProductCard({ product, mutating, wishlisted, onToggleWishlist, onOpen, onQuickAdd }) {
+// Quick Add, a spring "pop" on the wishlist toggle, and (below) the inline
+// multi-size picker's expand/collapse.
+//
+// This is THE single product card used everywhere a product tile renders
+// (homepage Best Sellers, the Collection grid, the Scent Finder quiz
+// results, and the product modal's related-products rail) — `size="rail"`
+// trims padding/image height for the horizontal-scroll contexts, and
+// `eyebrow` adds an optional small label above the image (e.g. the quiz's
+// "Strongest match") without changing anything else about the card.
+export default function ProductCard({ product, mutating, wishlisted, onToggleWishlist, onOpen, onQuickAdd, size = 'grid', eyebrow = null }) {
   const prefersReducedMotion = useReducedMotion();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const savingsAmount = product.compareAtPrice ? product.compareAtPrice - product.price : null;
   const savingsPercent = savingsAmount ? Math.round((savingsAmount / product.compareAtPrice) * 100) : null;
   const tapAnimation = prefersReducedMotion ? {} : { whileTap: { scale: 0.96 } };
+  const inStockSizes = product.sizes.filter((s) => s.availableForSale);
+
+  const handleQuickAdd = () => {
+    if (inStockSizes.length > 1) { setPickerOpen((open) => !open); return; }
+    onQuickAdd(product, inStockSizes[0]?.label);
+  };
+  const pickSize = (label) => { setPickerOpen(false); onQuickAdd(product, label); };
 
   return (
-    <article className="product-card">
+    <article className={`product-card product-card--${size}`}>
+      {eyebrow && <span className="card-eyebrow">{eyebrow}</span>}
       <button className="product-image" onClick={() => onOpen(product)} aria-label={`View ${product.name}`}>
         <div className={`product-backdrop tone-bg-${product.tone}`} />
         <div className="card-badges">
@@ -60,9 +77,25 @@ export default function ProductCard({ product, mutating, wishlisted, onToggleWis
             </> : <strong>Sold out</strong>}
           </div>
           <div className="product-actions">
-            <motion.button {...tapAnimation} disabled={!product.availableForSale || mutating} onClick={() => onQuickAdd(product)}>Quick add</motion.button>
+            <motion.button {...tapAnimation} disabled={!product.availableForSale || mutating} aria-expanded={inStockSizes.length > 1 ? pickerOpen : undefined} onClick={handleQuickAdd}>Quick add</motion.button>
             <button onClick={() => onOpen(product)}>Choose size <span aria-hidden="true">＋</span></button>
           </div>
+          <AnimatePresence initial={false}>
+            {pickerOpen && (
+              <motion.div
+                className="quick-size-picker"
+                initial={prefersReducedMotion ? false : { height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={prefersReducedMotion ? undefined : { height: 0, opacity: 0 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <p className="sr-only" id={`size-picker-${product.id}`}>Choose a size for {product.name}</p>
+                {inStockSizes.map((s) => (
+                  <button key={s.variantId} disabled={mutating} onClick={() => pickSize(s.label)}>{s.label} — {money(s.price)}</button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </article>
