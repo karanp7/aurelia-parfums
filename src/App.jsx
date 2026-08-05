@@ -16,6 +16,7 @@ import {
 } from './lib/shopifyCart.js';
 import { rankMatches, discoverySetKey, crossSellProduct } from './lib/cartLogic.js';
 import { readWishlist, toggleWishlistId, writeWishlist } from './lib/wishlist.js';
+import { readRecentlyViewed, recordView, writeRecentlyViewed } from './lib/recentlyViewed.js';
 
 // L-04 fix: the quiz and checkout-preview modals aren't needed on first
 // paint, so they're split into their own chunks and only fetched when opened.
@@ -210,6 +211,7 @@ function App() {
   const [discoveryWaitlistEmail, setDiscoveryWaitlistEmail] = useState('');
   const [discoveryWaitlistDone, setDiscoveryWaitlistDone] = useState(false);
   const [wishlist, setWishlist] = useState(() => readWishlist());
+  const [recentlyViewed, setRecentlyViewed] = useState(() => readRecentlyViewed());
   const [wishlistFilterOn, setWishlistFilterOn] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
@@ -304,6 +306,18 @@ function App() {
     document.title = activeProduct ? `${activeProduct.name} — Aurelia Parfums` : 'Aurelia — Find your signature scent';
   }, [activeProduct]);
 
+  // Records a view however the product detail was reached — grid click,
+  // quiz result, related-products rail, or a direct /products/:handle
+  // visit — since `activeProduct` resolves the same way for all of them.
+  useEffect(() => {
+    if (!activeProduct?.id) return;
+    setRecentlyViewed((prev) => {
+      const next = recordView(activeProduct.id, prev);
+      writeRecentlyViewed(next);
+      return next;
+    });
+  }, [activeProduct?.id]);
+
   useEffect(() => {
     document.body.style.overflow = cartOpen || quizOpen || activeProduct || menuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -319,6 +333,14 @@ function App() {
   // family above — never a fixed/guessed list.
   const brandOptions = useMemo(() => [...new Set(products.map((product) => product.house))].sort(), [products]);
   const sizeOptions = useMemo(() => [...new Set(products.flatMap((product) => product.sizes.map((size) => size.label)))], [products]);
+
+  // Resolves stored ids against the live catalog (drops any id no longer
+  // in `products` - e.g. a delisted product) rather than caching stale
+  // product data in localStorage alongside the ids.
+  const recentlyViewedProducts = useMemo(
+    () => recentlyViewed.map((id) => products.find((product) => product.id === id)).filter(Boolean),
+    [recentlyViewed, products]
+  );
 
   // Real, not fabricated: driven by the actual `family` filter (Shopify
   // productType) rather than inventing a separate page per marketing
@@ -778,6 +800,21 @@ function App() {
           description="Try a different note, family or spelling."
           action={<Button variant="text" onClick={clearFilters}>Clear filters</Button>}
         />}
+        {recentlyViewedProducts.length > 0 && <div className="recently-viewed-rail">
+          <p className="overline dark">Recently viewed</p>
+          <div className="rail-row">
+            {recentlyViewedProducts.map((product) => <ProductCard
+              key={product.id}
+              product={product}
+              size="rail"
+              mutating={mutating}
+              wishlisted={wishlist.includes(product.id)}
+              onToggleWishlist={toggleWishlist}
+              onOpen={openProduct}
+              onQuickAdd={addBottle}
+            />)}
+          </div>
+        </div>}
       </section>
 
       <section id="gifts" className="gift-section" data-reveal>

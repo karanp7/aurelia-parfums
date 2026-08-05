@@ -187,6 +187,7 @@
 
 /* L-05: related products inside the product modal, same family first. */
 .related-rail{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.related-rail .rail-row{margin-top:var(--space-2)}
+.recently-viewed-rail{margin-top:var(--space-6);padding-top:var(--space-4);border-top:1px solid var(--line)}.recently-viewed-rail .rail-row{margin-top:var(--space-3)}
 /* Shared horizontal-scroll rail for any group of .product-card--rail cards
    (Scent Finder results, product-modal related products, and Recently
    Viewed) - one layout rule instead of a bespoke grid per call site. */
