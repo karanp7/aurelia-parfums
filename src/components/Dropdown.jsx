@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Icon from './Icon.jsx';
 
 // Self-contained accessible dropdown (aria-haspopup/expanded, Escape +
 // click-outside close) — same pattern as the nav's ShopDropdown in
@@ -28,7 +29,7 @@ export default function Dropdown({ label, options, value, onChange, className = 
       <button type="button" disabled={disabled} title={disabled ? 'Coming soon' : undefined} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <span className="filter-dropdown-label">{label}</span>
         <span>{disabled ? 'Coming soon' : current?.label ?? 'All'}</span>
-        <span aria-hidden="true">▾</span>
+        <Icon name="chevronDown" size={14}/>
       </button>
       {open && <ul className="filter-dropdown-menu" role="listbox">
         {options.map((option) => (

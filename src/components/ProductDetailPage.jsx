@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import Button from './Button.jsx';
 import ProductCard from './ProductCard.jsx';
 import ProductGallery from './ProductGallery.jsx';
+import Icon from './Icon.jsx';
 import { useStickyOnScroll } from '../hooks/useStickyOnScroll.js';
 
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
@@ -28,8 +29,6 @@ function findConcentration(product) {
 // breathing room since this box sits beside imagery rather than at the very
 // top of a section.
 const STICK_OFFSET = 130;
-
-const Icon = ({ children }) => <span aria-hidden="true">{children}</span>;
 
 // Every claim below already exists verbatim elsewhere on the site
 // (announcement bar, trust row, policies) - reused here rather than
@@ -59,7 +58,7 @@ function StarRating({ value }) {
   return (
     <span className="performance-stars" aria-label={`${value} out of 5`}>
       {Array.from({ length: 5 }, (_, index) => (
-        <span key={index} aria-hidden="true" className={index < Math.round(value) ? 'filled' : ''}>★</span>
+        <Icon key={index} name="star" filled={index < Math.round(value)} size={16}/>
       ))}
     </span>
   );
@@ -106,7 +105,7 @@ export default function ProductDetailPage({
 
   return (
     <div className="product-page">
-      <button type="button" className="back-link" onClick={onBack}>← Back to shop</button>
+      <button type="button" className="back-link" onClick={onBack}><Icon name="arrowLeft" size={14}/> Back to shop</button>
       <div className="product-modal" ref={productModalRef}>
         <ProductGallery product={product} />
         <div className="modal-copy">
@@ -160,9 +159,9 @@ export default function ProductDetailPage({
               <div className="pdp-quantity">
                 <span className="pdp-quantity-label">Quantity</span>
                 <div className="quantity">
-                  <button type="button" aria-label="Decrease quantity" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
+                  <button type="button" aria-label="Decrease quantity" onClick={() => setQuantity((q) => Math.max(1, q - 1))}><Icon name="minus" size={12}/></button>
                   <span>{quantity}</span>
-                  <button type="button" aria-label="Increase quantity" onClick={() => setQuantity((q) => q + 1)}>+</button>
+                  <button type="button" aria-label="Increase quantity" onClick={() => setQuantity((q) => q + 1)}><Icon name="plus" size={12}/></button>
                 </div>
               </div>
 
@@ -191,7 +190,7 @@ export default function ProductDetailPage({
                   animate={prefersReducedMotion ? undefined : { scale: wishlisted ? [1, 1.3, 1] : 1 }}
                   transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <span aria-hidden="true">{wishlisted ? '♥' : '♡'}</span>
+                  <Icon name="heart" filled={wishlisted} size={18}/>
                 </motion.button>
               </div>
 
@@ -200,7 +199,7 @@ export default function ProductDetailPage({
 
               <ul className="pdp-trust-list">
                 {TRUST_ITEMS.map((item) => (
-                  <li key={item}><Icon>✓</Icon> {item}</li>
+                  <li key={item}><Icon name="check" size={13}/> {item}</li>
                 ))}
               </ul>
             </div>
@@ -302,7 +301,7 @@ export default function ProductDetailPage({
         <p className="overline dark">Why buy from Aurelia</p>
         <div className="why-buy-grid">
           {WHY_BUY_ITEMS.map((item) => (
-            <div key={item} className="why-buy-item"><Icon>✓</Icon> {item}</div>
+            <div key={item} className="why-buy-item"><Icon name="check" size={13}/> {item}</div>
           ))}
         </div>
       </section>

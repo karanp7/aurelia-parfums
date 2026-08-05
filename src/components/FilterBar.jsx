@@ -1,5 +1,6 @@
 import React from 'react';
 import Dropdown from './Dropdown.jsx';
+import Icon from './Icon.jsx';
 import { useStickyOnScroll } from '../hooks/useStickyOnScroll.js';
 
 // Matches the fixed announcement bar (36px) + nav (74px) stack elsewhere in
@@ -45,7 +46,7 @@ export default function FilterBar({
     <div ref={wrapRef} className={`filter-bar${pinned ? ' is-pinned' : ''}`} style={pinned ? { height: barHeight } : undefined}>
       <div className="filter-bar-inner">
       <div className="filter-bar-row filter-bar-primary">
-        <label><span className="sr-only">Search fragrances</span><span aria-hidden="true">⌕</span><input ref={searchInputRef} value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Search rose, woods, fresh, evening…"/></label>
+        <label><span className="sr-only">Search fragrances</span><Icon name="search"/><input ref={searchInputRef} value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Search rose, woods, fresh, evening…"/></label>
         <div className="family-tabs" role="group" aria-label="Filter by fragrance family">
           <button className={family === 'All' ? 'active' : ''} aria-pressed={family === 'All'} onClick={() => onFamilyChange('All')}>All</button>
           {familyOptions.map((item) => <button key={item} className={family === item ? 'active' : ''} aria-pressed={family === item} onClick={() => onFamilyChange(item)}>{item}</button>)}

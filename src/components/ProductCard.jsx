@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import PerfumeBottle from './PerfumeBottle.jsx';
 import Badge from './Badge.jsx';
+import Icon from './Icon.jsx';
 
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
 
@@ -59,7 +60,7 @@ export default function ProductCard({ product, mutating, wishlisted, onToggleWis
         animate={prefersReducedMotion ? undefined : { scale: wishlisted ? [1, 1.3, 1] : 1 }}
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       >
-        <span aria-hidden="true">{wishlisted ? '♥' : '♡'}</span>
+        <Icon name="heart" filled={wishlisted} size={16}/>
       </motion.button>
 
       <div className="product-info">
@@ -78,7 +79,7 @@ export default function ProductCard({ product, mutating, wishlisted, onToggleWis
           </div>
           <div className="product-actions">
             <motion.button {...tapAnimation} disabled={!product.availableForSale || mutating} aria-expanded={inStockSizes.length > 1 ? pickerOpen : undefined} onClick={handleQuickAdd}>Quick add</motion.button>
-            <button onClick={() => onOpen(product)}>Choose size <span aria-hidden="true">＋</span></button>
+            <button onClick={() => onOpen(product)}>Choose size <Icon name="plus" size={12}/></button>
           </div>
           <AnimatePresence initial={false}>
             {pickerOpen && (

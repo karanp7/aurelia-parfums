@@ -1,4 +1,5 @@
 import React from 'react';
+import Icon from './Icon.jsx';
 
 // Shared overlay shell for all 4 overlays (mobile menu, product modal, quiz
 // modal, cart drawer). useDialogA11y (focus-trap/Escape/focus-restore) stays
@@ -19,5 +20,5 @@ export default function Dialog({ overlayClassName = '', label, dialogRef, childr
 }
 
 export function DialogClose({ onClick, label = 'Close', className = '' }) {
-  return <button className={`close ${className}`.trim()} onClick={onClick} aria-label={label}>×</button>;
+  return <button className={`close ${className}`.trim()} onClick={onClick} aria-label={label}><Icon name="close" size={16}/></button>;
 }

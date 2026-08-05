@@ -2,12 +2,13 @@ import React from 'react';
 import Dialog, { DialogClose } from './Dialog.jsx';
 import Button from './Button.jsx';
 import ProductCard from './ProductCard.jsx';
+import Icon from './Icon.jsx';
 import { MOOD_TAGS, INTENSITY_TAGS } from '../lib/shopifyProducts.js';
 
 const RANK_LABELS = ['Strongest match', 'Softer alternative', 'More adventurous'];
 
 function QuizQuestion({ eyebrow, title, options, onAnswer }) {
-  return <div className="quiz-question"><p className="overline dark">{eyebrow}</p><h2>{title}</h2><div>{options.map((option) => <button key={option} onClick={() => onAnswer(option)}><span>{option}</span><span aria-hidden="true">→</span></button>)}</div></div>;
+  return <div className="quiz-question"><p className="overline dark">{eyebrow}</p><h2>{title}</h2><div>{options.map((option) => <button key={option} onClick={() => onAnswer(option)}><span>{option}</span><Icon name="arrowRight"/></button>)}</div></div>;
 }
 
 export default function QuizModal({ quizStep, quizAnswers, quizMatches, familyOptions, discoveryEnabled, discoveryPrice, wishlist, onToggleWishlist, mutating, onQuickAdd, onAnswer, onClose, onRetake, onAddSet, onSelectProduct, dialogRef }) {
