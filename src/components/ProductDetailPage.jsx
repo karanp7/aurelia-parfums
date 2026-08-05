@@ -208,6 +208,31 @@ export default function ProductDetailPage({
         </div>
       </div>
 
+      {/* Mobile-only (see styles.css - hidden entirely above the tablet
+          breakpoint). Reuses the same `pinned` boolean already computed
+          for the desktop sticky purchase box above: it's true whenever
+          scrolled past the purchase box's position and before the
+          two-column area's bottom, on any viewport width - only the CSS
+          differs per breakpoint (desktop pins the whole box in place;
+          mobile shows this compact bar instead, so the two treatments
+          never compete for the same space). */}
+      {pinned && selected && (
+        <div className="mobile-sticky-bar">
+          <div className="mobile-sticky-info">
+            <span className="mobile-sticky-name">{product.name}</span>
+            <span className="mobile-sticky-meta">{money(selected.price)}{selectedSize ? ` · ${selectedSize}` : ''}</span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-dark"
+            disabled={mutating || !inStock}
+            onClick={() => addBottle(product, selectedSize, quantity)}
+          >
+            Add to Bag
+          </button>
+        </div>
+      )}
+
       {(product.notes.top.length > 0 || product.notes.heart.length > 0 || product.notes.base.length > 0) && (
         <section className="pyramid-section">
           <div className="section-intro">

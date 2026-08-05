@@ -298,14 +298,23 @@ function App() {
 
   const activeProduct = activeProductFromList || directProduct;
   const closeProduct = () => navigate('/');
-  const openProduct = (product) => {
-    setSelectedSize(product.sizes.find((size) => size.availableForSale)?.label || product.sizes[0]?.label || null);
-    navigate(`/products/${product.handle}`);
-  };
+  const openProduct = (product) => navigate(`/products/${product.handle}`);
 
   useEffect(() => {
     document.title = activeProduct ? `${activeProduct.name} — Aurelia Parfums` : 'Aurelia — Find your signature scent';
   }, [activeProduct]);
+
+  // Previously only set inside openProduct(), which meant a direct
+  // /products/:handle visit (no click-through - a bookmark, a shared link,
+  // a page reload) left `selectedSize` at null: pricing still fell back to
+  // sizes[0] correctly, but the size-selector buttons never showed any
+  // size as selected. Keyed on the product's own id (not the whole object,
+  // which can change reference on unrelated re-renders) so this covers
+  // every way the product page is reached, uniformly.
+  useEffect(() => {
+    if (!activeProduct) return;
+    setSelectedSize(activeProduct.sizes.find((size) => size.availableForSale)?.label || activeProduct.sizes[0]?.label || null);
+  }, [activeProduct?.id]);
 
   // Records a view however the product detail was reached — grid click,
   // quiz result, related-products rail, or a direct /products/:handle
