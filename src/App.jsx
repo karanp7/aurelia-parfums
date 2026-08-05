@@ -51,6 +51,14 @@ const MOOD_TILES = [
   { label: 'Special Occasions', tone: 'red' }
 ];
 
+// Structural shells only — no real reviews app or Instagram feed is
+// connected yet, so these stay empty until real content exists rather than
+// shipping fabricated quotes or lifestyle photography. The wrapper section
+// still always mounts (see the always-mount pattern used for Featured
+// Brands) so useReveal's one-time querySelectorAll finds it.
+const testimonials = [];
+const instagramPosts = [];
+
 const Icon = ({ children }) => <span aria-hidden="true">{children}</span>;
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
 
@@ -602,6 +610,42 @@ function App() {
         </article>
       </section>
 
+      <section className="mood-section" data-reveal>
+        <div className="section-intro"><p className="overline dark">Shop by mood</p><h2>Find the fragrance for the moment.</h2></div>
+        <div className="mood-grid">
+          {MOOD_TILES.map((mood) => <button key={mood.label} className={`mood-tile tone-bg-${mood.tone}`} onClick={() => shopByTerm(mood.label)}>
+            <span>{mood.label}</span>
+          </button>)}
+        </div>
+      </section>
+
+      <section id="featured-brands" className="brands-section" data-reveal>
+        {featuredBrands.length >= 3 && <>
+          <div className="section-intro"><p className="overline dark">Featured brands</p><h2>The designer houses we carry.</h2></div>
+          <div className="brands-row">
+            {featuredBrands.map((brand) => <button key={brand} className="brand-wordmark" onClick={() => shopByTerm(brand)}>{brand}</button>)}
+          </div>
+        </>}
+      </section>
+
+      <section id="testimonials" className="testimonials-section" data-reveal>
+        {testimonials.length > 0 && <>
+          <div className="section-intro"><p className="overline dark">In their words</p><h2>What customers are saying.</h2></div>
+          <div className="testimonials-row">
+            {testimonials.map((item) => <blockquote key={item.author}><p>{item.quote}</p><footer>{item.author}</footer></blockquote>)}
+          </div>
+        </>}
+      </section>
+
+      <section id="instagram" className="instagram-section" data-reveal>
+        {instagramPosts.length > 0 && <>
+          <div className="section-intro"><p className="overline dark">Follow along</p><h2>@aureliaparfums</h2></div>
+          <div className="instagram-row">
+            {instagramPosts.map((post) => <a key={post.url} href={post.url} target="_blank" rel="noreferrer"><img src={post.image} alt={post.alt}/></a>)}
+          </div>
+        </>}
+      </section>
+
       <section id="collection" className="collection" data-reveal>
         <div className="collection-head"><div><p className="overline dark">Full bottles</p><h2>For when you already know.</h2></div><p>Clear descriptions and real product details, pulled straight from the shop.</p></div>
         <div className="finder-row">
@@ -629,24 +673,6 @@ function App() {
           description="Try a different note, family or spelling."
           action={<Button variant="text" onClick={clearFilters}>Clear search &amp; filters</Button>}
         />}
-      </section>
-
-      <section className="mood-section" data-reveal>
-        <div className="section-intro"><p className="overline dark">Shop by mood</p><h2>Find the fragrance for the moment.</h2></div>
-        <div className="mood-grid">
-          {MOOD_TILES.map((mood) => <button key={mood.label} className={`mood-tile tone-bg-${mood.tone}`} onClick={() => shopByTerm(mood.label)}>
-            <span>{mood.label}</span>
-          </button>)}
-        </div>
-      </section>
-
-      <section id="featured-brands" className="brands-section" data-reveal>
-        {featuredBrands.length >= 3 && <>
-          <div className="section-intro"><p className="overline dark">Featured brands</p><h2>The designer houses we carry.</h2></div>
-          <div className="brands-row">
-            {featuredBrands.map((brand) => <button key={brand} className="brand-wordmark" onClick={() => shopByTerm(brand)}>{brand}</button>)}
-          </div>
-        </>}
       </section>
 
       <section id="gifts" className="gift-section" data-reveal>
