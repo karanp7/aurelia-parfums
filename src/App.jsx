@@ -36,6 +36,21 @@ const GIFT_WRAP_HANDLE = 'gift-wrap';
 // it's the recommendation engine, not the disabled purchase mechanic.
 const DISCOVERY_COMMERCE_ENABLED = false;
 
+// Shop by Mood: no separate "occasion" data exists in Shopify, so each tile
+// reuses the existing search/filter mechanism rather than needing new data
+// plumbing — clicking one just searches the catalog for that word (matching
+// whatever real products' tags/descriptions happen to reference it) and
+// scrolls to the shop grid. Tones reuse the same six decorative colors the
+// product cards already use, just for a different (non-product) surface.
+const MOOD_TILES = [
+  { label: 'Date Night', tone: 'plum' },
+  { label: 'Everyday', tone: 'cream' },
+  { label: 'Office', tone: 'blue' },
+  { label: 'Summer', tone: 'amber' },
+  { label: 'Winter', tone: 'rose' },
+  { label: 'Special Occasions', tone: 'red' }
+];
+
 const Icon = ({ children }) => <span aria-hidden="true">{children}</span>;
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
 
@@ -246,6 +261,30 @@ function App() {
     const rest = products.filter((product) => product.id !== activeProduct.id && product.family !== activeProduct.family);
     return [...sameFamily, ...rest].slice(0, 3);
   }, [activeProduct, products]);
+
+  // Featured Brands: derived from real Shopify vendor values, not a
+  // hardcoded list. Uses `vendorRaw` (null when unset) rather than the
+  // store-name-coalesced `house`, so Aurelia Parfums itself never shows up
+  // as if it were a resold designer brand. Normalizes casing/whitespace
+  // before deduping (free-text field — "Chanel" vs "CHANEL " would
+  // otherwise double-count) and hides below 3 distinct real vendors rather
+  // than rendering an awkward 1-2-tile row.
+  const featuredBrands = useMemo(() => {
+    const seen = new Map();
+    products.forEach((product) => {
+      const trimmed = product.vendorRaw?.trim();
+      if (!trimmed) return;
+      const key = trimmed.toLowerCase();
+      if (!seen.has(key)) seen.set(key, trimmed);
+    });
+    return [...seen.values()];
+  }, [products]);
+
+  const shopByTerm = (term) => {
+    setSearch(term);
+    setFamily('All');
+    document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const itemCount = cart?.totalQuantity || 0;
   const shippingThreshold = 100;
@@ -492,6 +531,24 @@ function App() {
           description="Try a different note, family or spelling."
           action={<Button variant="text" onClick={clearFilters}>Clear search &amp; filters</Button>}
         />}
+      </section>
+
+      <section className="mood-section" data-reveal>
+        <div className="section-intro"><p className="overline dark">Shop by mood</p><h2>Find the fragrance for the moment.</h2></div>
+        <div className="mood-grid">
+          {MOOD_TILES.map((mood) => <button key={mood.label} className={`mood-tile tone-bg-${mood.tone}`} onClick={() => shopByTerm(mood.label)}>
+            <span>{mood.label}</span>
+          </button>)}
+        </div>
+      </section>
+
+      <section className="brands-section" data-reveal>
+        {featuredBrands.length >= 3 && <>
+          <div className="section-intro"><p className="overline dark">Featured brands</p><h2>The designer houses we carry.</h2></div>
+          <div className="brands-row">
+            {featuredBrands.map((brand) => <button key={brand} className="brand-wordmark" onClick={() => shopByTerm(brand)}>{brand}</button>)}
+          </div>
+        </>}
       </section>
 
       <section id="gifts" className="gift-section" data-reveal>

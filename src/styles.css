@@ -28,6 +28,23 @@
 /* P1 fix (#11): badge tag was 8px, now 10px. */
 .tag{background:rgba(255,255,255,.78);backdrop-filter:blur(10px);border-radius:999px;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.12em}
 .tag-shipping{background:var(--sand);color:var(--graphite)}.bottle-wrap{position:absolute;inset:0;display:grid;place-items:center;transition:.6s var(--ease)}.product-image:hover .bottle-wrap{transform:translateY(-10px) scale(1.025)}.view-hint{position:absolute;bottom:16px;left:50%;transform:translate(-50%,15px);opacity:0;background:var(--ink);color:white;border-radius:999px;padding:10px 15px;font-size:10px;transition:.35s var(--ease)}.product-image:hover .view-hint{transform:translate(-50%,0);opacity:1}.product-info{padding:20px 5px 30px}.product-info>p{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted)}.product-info h3{font:400 30px 'Italiana',serif;margin:5px 0 10px}.product-info>span{display:block;font-size:13px;line-height:1.6;color:var(--muted);min-height:42px}.card-review{font-size:10px;margin:13px 0}.card-review small{color:var(--muted);margin-left:5px}.product-info>div:last-child{display:flex;justify-content:space-between;align-items:center;margin-top:18px}.product-info>div:last-child button{border:0;background:none;font-size:10px;text-decoration:underline}
+/* Milestone 6: Shop by Mood (static tiles, reuses the existing search/filter) */
+.mood-section{padding:var(--space-7) 6vw}
+.mood-grid{display:flex;flex-wrap:wrap;gap:var(--space-4);margin-top:var(--space-5)}
+.mood-tile{width:170px;height:170px;border-radius:50%;border:0;display:grid;place-items:center;text-align:center;padding:0 20px;transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.mood-tile:hover{transform:translateY(-4px);box-shadow:var(--shadow-soft)}
+.mood-tile span{font:400 18px 'Italiana',serif;color:var(--ink)}
+
+/* Milestone 6: Featured Brands — no padding on the section itself so it
+   collapses to zero height when there are fewer than 3 real vendors
+   (see the >= 3 guard in App.jsx); vertical spacing lives on the children
+   instead, which only render when there's enough real data to show. */
+.brands-section{padding:0 6vw}
+.brands-section .section-intro{padding-top:var(--space-6)}
+.brands-row{display:flex;flex-wrap:wrap;gap:var(--space-4);margin:var(--space-5) 0 var(--space-6);padding-top:var(--space-3);border-top:1px solid var(--line)}
+.brand-wordmark{border:0;background:none;font:400 26px 'Italiana',serif;letter-spacing:.04em;color:var(--muted);padding:6px 0;transition:color .2s var(--ease)}
+.brand-wordmark:hover{color:var(--ink)}
+
 /* Luxury design-system pass: card badges wrapper, wishlist toggle, real compare-at pricing */
 .card-badges{position:absolute;top:18px;left:18px;z-index:2;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .wishlist-btn{position:absolute;top:14px;right:14px;z-index:3;width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.82);backdrop-filter:blur(10px);display:grid;place-items:center;font-size:16px;color:var(--ink);box-shadow:var(--shadow-soft)}
