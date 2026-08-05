@@ -568,7 +568,7 @@ function App() {
       <div><a className="logo footer-logo" href="#top">AURELIA <span>PARFUMS</span></a><h2>Choose slowly.<br/><em>Wear confidently.</em></h2></div>
       <div className="footer-links"><a href="#discovery">Discovery sets</a><a href="#collection">Full bottles</a><a href="#gifts">Gifts</a><button onClick={() => setQuizOpen(true)}>Scent finder</button><a href="#policies">Shipping &amp; returns</a></div>
       <form className="footer-signup" onSubmit={(event) => { event.preventDefault(); if (!signupEmail.trim()) return; setSignupDone(true); setSignupEmail(''); }}>
-        <label htmlFor="footer-email">Get first access to new fragrances</label>
+        <label htmlFor="footer-email">Exclusive launches, private offers and personalized recommendations</label>
         {signupDone ? <p className="signup-done">Thanks — we'll be in touch.</p> : <div className="signup-row">
           <input id="footer-email" type="email" required value={signupEmail} onChange={(event) => setSignupEmail(event.target.value)} placeholder="you@email.com"/>
           <Button variant="secondary" type="submit">Sign up</Button>
