@@ -7,6 +7,7 @@ import LoadingSkeleton, { CollectionHeaderSkeleton, FilterBarSkeleton } from './
 import EmptyState from './components/EmptyState.jsx';
 import ProductCard from './components/ProductCard.jsx';
 import FilterBar, { PRICE_BUCKETS } from './components/FilterBar.jsx';
+import FilterDrawer from './components/FilterDrawer.jsx';
 import { isShopifyConfigured } from './lib/shopify.js';
 import { fetchProducts, fetchProductByHandle } from './lib/shopifyProducts.js';
 import {
@@ -210,7 +211,9 @@ function App() {
   const [discoveryWaitlistDone, setDiscoveryWaitlistDone] = useState(false);
   const [wishlist, setWishlist] = useState(() => readWishlist());
   const [wishlistFilterOn, setWishlistFilterOn] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(12);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const heroRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -329,6 +332,11 @@ function App() {
   // re-skeletons the grid, so re-sorting doesn't flash the whole section.
   const firstLoad = productsLoading && products.length === 0;
 
+  // Real count of active filters (excludes search, which has its own
+  // always-visible input) - shown as a badge on the mobile "Filters"
+  // trigger so users know something is applied without opening the drawer.
+  const activeFilterCount = [family !== 'All', brand !== 'All', priceBucket !== 'all', availabilityOnly, sizeFilter !== 'All'].filter(Boolean).length;
+
   const filtered = useMemo(() => products.filter((product) => {
     const searchable = [product.name, product.house, product.family, product.summary, product.description, ...(product.tags || [])]
       .join(' ')
@@ -342,6 +350,11 @@ function App() {
       && searchable.includes(search.toLowerCase())
       && matchesWishlist && matchesBrand && matchesAvailability && matchesSize && matchesPrice;
   }), [products, family, search, wishlistFilterOn, wishlist, brand, availabilityOnly, sizeFilter, priceBucket]);
+
+  // Reset pagination whenever the result set's composition changes, so
+  // switching filters never leaves the grid stuck deep in a stale "show
+  // more" state from a previous, larger result set.
+  useEffect(() => { setVisibleCount(12); }, [family, search, brand, priceBucket, availabilityOnly, sizeFilter, sort, wishlistFilterOn]);
 
   const quizMatches = useMemo(() => rankMatches(products, quizAnswers, 3), [products, quizAnswers]);
 
@@ -512,9 +525,13 @@ function App() {
     document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
     window.requestAnimationFrame(() => searchInputRef.current?.focus());
   };
-  const clearFilters = () => {
-    setSearch(''); setFamily('All'); setBrand('All'); setPriceBucket('all'); setAvailabilityOnly(false); setSizeFilter('All');
+  // Split so the mobile filter drawer's "Clear all" can reset just the
+  // filter facets without also wiping the search box it doesn't contain
+  // (that would reset text the user can still see and is still typing in).
+  const clearFilterFacets = () => {
+    setFamily('All'); setBrand('All'); setPriceBucket('all'); setAvailabilityOnly(false); setSizeFilter('All');
   };
+  const clearFilters = () => { setSearch(''); clearFilterFacets(); };
 
   const toggleWishlist = (productId) => setWishlist((current) => {
     const next = toggleWishlistId(productId, current);
@@ -533,6 +550,7 @@ function App() {
   const productDialogRef = useDialogA11y(Boolean(activeProduct), closeProduct);
   const quizDialogRef = useDialogA11y(quizOpen, closeQuiz);
   const cartDialogRef = useDialogA11y(cartOpen, () => setCartOpen(false));
+  const filterDrawerDialogRef = useDialogA11y(filterDrawerOpen, () => setFilterDrawerOpen(false));
 
   if (!isShopifyConfigured) {
     return <div className="site-shell">
@@ -721,11 +739,24 @@ function App() {
           availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
           sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
           sort={sort} sortOptions={Object.entries(SORT_OPTIONS).map(([value, option]) => ({ value, label: option.label }))} onSortChange={setSort}
+          activeFilterCount={activeFilterCount} onOpenFilters={() => setFilterDrawerOpen(true)}
+        />}
+        {filterDrawerOpen && <FilterDrawer
+          dialogRef={filterDrawerDialogRef}
+          onClose={() => setFilterDrawerOpen(false)}
+          family={family} familyOptions={familyOptions} onFamilyChange={setFamily}
+          brand={brand} brandOptions={brandOptions} onBrandChange={setBrand}
+          priceBucket={priceBucket} onPriceBucketChange={setPriceBucket}
+          availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
+          sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
+          onClear={clearFilterFacets}
+          resultCount={filtered.length}
         />}
         {productsLoading ? <LoadingSkeleton count={8} />
           : productsError ? <EmptyState title="Couldn't load the catalog." description={productsError} />
-          : filtered.length ? <div className="product-grid">
-          {filtered.map((product) => <ProductCard
+          : filtered.length ? <>
+          <div className="product-grid">
+          {filtered.slice(0, visibleCount).map((product) => <ProductCard
             key={product.id}
             product={product}
             mutating={mutating}
@@ -734,14 +765,18 @@ function App() {
             onOpen={openProduct}
             onQuickAdd={addBottle}
           />)}
-        </div> : wishlistFilterOn ? <EmptyState
+          </div>
+          {visibleCount < filtered.length && <div className="show-more-row">
+            <Button variant="secondary" onClick={() => setVisibleCount((count) => count + 12)}>Show more ({filtered.length - visibleCount} remaining)</Button>
+          </div>}
+        </> : wishlistFilterOn ? <EmptyState
           title="You haven't saved any fragrances yet."
           description="Tap the heart icon on any product to save it here."
           action={<Button variant="text" onClick={() => setWishlistFilterOn(false)}>Show all fragrances</Button>}
         /> : <EmptyState
-          title={`No fragrances match "${search}".`}
+          title="No fragrances matched your filters."
           description="Try a different note, family or spelling."
-          action={<Button variant="text" onClick={clearFilters}>Clear search &amp; filters</Button>}
+          action={<Button variant="text" onClick={clearFilters}>Clear filters</Button>}
         />}
       </section>
 

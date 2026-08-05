@@ -35,7 +35,8 @@ export default function FilterBar({
   priceBucket, onPriceBucketChange,
   availabilityOnly, onAvailabilityChange,
   sizeFilter, sizeOptions, onSizeChange,
-  sort, sortOptions, onSortChange
+  sort, sortOptions, onSortChange,
+  activeFilterCount = 0, onOpenFilters
 }) {
   // CSS `position: sticky` can't work here — .site-shell (the app's outer
   // wrapper, needed so decorative absolutely-positioned hero elements never
@@ -85,6 +86,9 @@ export default function FilterBar({
           <button className={family === 'All' ? 'active' : ''} aria-pressed={family === 'All'} onClick={() => onFamilyChange('All')}>All</button>
           {familyOptions.map((item) => <button key={item} className={family === item ? 'active' : ''} aria-pressed={family === item} onClick={() => onFamilyChange(item)}>{item}</button>)}
         </div>
+        <button type="button" className="filter-drawer-trigger" onClick={onOpenFilters}>
+          Filters{activeFilterCount > 0 && <span className="filter-count-badge">{activeFilterCount}</span>}
+        </button>
         <Dropdown className="sort-dropdown" label="Sort by" value={sort} onChange={onSortChange} options={sortOptions} />
       </div>
 
