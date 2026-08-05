@@ -1,7 +1,7 @@
 import React from 'react';
-import PerfumeBottle from './PerfumeBottle.jsx';
 import Button from './Button.jsx';
 import ProductCard from './ProductCard.jsx';
+import ProductGallery from './ProductGallery.jsx';
 
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
 
@@ -22,7 +22,7 @@ export default function ProductDetailPage({
     <div className="product-page">
       <button type="button" className="back-link" onClick={onBack}>← Back to shop</button>
       <div className="product-modal">
-        <div className={`modal-art tone-bg-${product.tone}`}><PerfumeBottle tone={product.tone} image={product.image} alt={product.imageAlt || product.name} /></div>
+        <ProductGallery product={product} />
         <div className="modal-copy">
           <p className="overline dark">{product.house}</p>
           <h2>{product.name}</h2>
