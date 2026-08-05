@@ -573,23 +573,33 @@ function App() {
       </section>
 
       <section className="discovery-feature" data-reveal>
-        <div className="discovery-art" aria-hidden="true"><div className="set-box"><span>AURELIA</span><small>PERSONAL DISCOVERY SET</small></div><div className="vial-row"><i/><i/><i/></div></div>
-        <div className="discovery-copy">
-          <p className="overline">Coming soon</p>
-          <h2>Three considered matches.<br/>One confident decision.</h2>
-          <p>Sample sets are on the way — three 2 ml sprays so you can try a fragrance at home before committing to a full bottle.</p>
-          {DISCOVERY_COMMERCE_ENABLED ? (
-            <div className="price-action"><strong>{discoveryPriceLabel}</strong><Button onClick={() => setQuizOpen(true)}>Build my set <Icon>↗</Icon></Button></div>
-          ) : (
-            <form className="waitlist-form" onSubmit={(event) => { event.preventDefault(); if (!discoveryWaitlistEmail.trim()) return; setDiscoveryWaitlistDone(true); setDiscoveryWaitlistEmail(''); }}>
-              <label htmlFor="discovery-waitlist-email">Be first to know when it launches</label>
-              {discoveryWaitlistDone ? <p className="waitlist-done">Thanks — we'll let you know.</p> : <div className="signup-row">
-                <input id="discovery-waitlist-email" type="email" required value={discoveryWaitlistEmail} onChange={(event) => setDiscoveryWaitlistEmail(event.target.value)} placeholder="you@email.com"/>
-                <Button variant="secondary" type="submit">Notify me</Button>
-              </div>}
-            </form>
-          )}
-        </div>
+        <article className="discovery-card">
+          <div className="discovery-art" aria-hidden="true"><div className="set-box"><span>AURELIA</span><small>PERSONAL DISCOVERY SET</small></div><div className="vial-row"><i/><i/><i/></div></div>
+          <div className="discovery-copy">
+            <p className="overline">Coming soon</p>
+            <h2>Three considered matches.<br/>One confident decision.</h2>
+            <p>Sample sets are on the way — three 2 ml sprays so you can try a fragrance at home before committing to a full bottle.</p>
+            {DISCOVERY_COMMERCE_ENABLED ? (
+              <div className="price-action"><strong>{discoveryPriceLabel}</strong><Button onClick={() => setQuizOpen(true)}>Build my set <Icon>↗</Icon></Button></div>
+            ) : (
+              <form className="waitlist-form" onSubmit={(event) => { event.preventDefault(); if (!discoveryWaitlistEmail.trim()) return; setDiscoveryWaitlistDone(true); setDiscoveryWaitlistEmail(''); }}>
+                <label htmlFor="discovery-waitlist-email">Be first to know when it launches</label>
+                {discoveryWaitlistDone ? <p className="waitlist-done">Thanks — we'll let you know.</p> : <div className="signup-row">
+                  <input id="discovery-waitlist-email" type="email" required value={discoveryWaitlistEmail} onChange={(event) => setDiscoveryWaitlistEmail(event.target.value)} placeholder="you@email.com"/>
+                  <Button variant="secondary" type="submit">Notify me</Button>
+                </div>}
+              </form>
+            )}
+          </div>
+        </article>
+        <article className="scentfinder-card">
+          <div className="scentfinder-copy">
+            <p className="overline">Not sure where to start?</p>
+            <h2>Let our Scent Finder<br/>find your perfect match.</h2>
+            <p>Answer a few quick questions and we'll recommend fragrances just for you.</p>
+            <Button variant="secondary" onClick={() => setQuizOpen(true)}>Take the quiz <Icon>→</Icon></Button>
+          </div>
+        </article>
       </section>
 
       <section id="collection" className="collection" data-reveal>
