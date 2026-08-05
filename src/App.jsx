@@ -121,6 +121,38 @@ function useDialogA11y(isOpen, onClose) {
   return containerRef;
 }
 
+// Small self-contained dropdown for the nav's "Shop" item — Escape and a
+// click outside both close it, matching the spirit of useDialogA11y above
+// without the full focus-trap machinery a real modal needs (a dropdown menu
+// is dismissable, not modal).
+function ShopDropdown({ open, onToggle, onClose, onShopNew }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (event) => { if (event.key === 'Escape') onClose(); };
+    const onClickOutside = (event) => { if (ref.current && !ref.current.contains(event.target)) onClose(); };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onClickOutside);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onClickOutside);
+    };
+  }, [open, onClose]);
+
+  return (
+    <div className="shop-dropdown" ref={ref}>
+      <button aria-haspopup="true" aria-expanded={open} onClick={onToggle}>Shop <span aria-hidden="true">▾</span></button>
+      {open && <div className="shop-dropdown-menu" role="menu">
+        <a role="menuitem" href="#collection" onClick={onClose}>All Fragrances</a>
+        <a role="menuitem" href="#best-sellers" onClick={onClose}>Best Sellers</a>
+        <button role="menuitem" onClick={onShopNew}>New Arrivals</button>
+        <a role="menuitem" href="#gifts" onClick={onClose}>Gifts</a>
+      </div>}
+    </div>
+  );
+}
+
 function App() {
   const [family, setFamily] = useState('All');
   const [search, setSearch] = useState('');
@@ -150,6 +182,8 @@ function App() {
   const [discoveryWaitlistEmail, setDiscoveryWaitlistEmail] = useState('');
   const [discoveryWaitlistDone, setDiscoveryWaitlistDone] = useState(false);
   const [wishlist, setWishlist] = useState(() => readWishlist());
+  const [wishlistFilterOn, setWishlistFilterOn] = useState(false);
+  const [shopMenuOpen, setShopMenuOpen] = useState(false);
 
   const heroRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -242,7 +276,8 @@ function App() {
     const searchable = [product.name, product.house, product.family, product.summary, product.description, ...(product.tags || [])]
       .join(' ')
       .toLowerCase();
-    return (family === 'All' || product.family === family) && searchable.includes(search.toLowerCase());
+    const matchesWishlist = !wishlistFilterOn || wishlist.includes(product.id);
+    return (family === 'All' || product.family === family) && searchable.includes(search.toLowerCase()) && matchesWishlist;
   });
 
   const quizMatches = useMemo(() => rankMatches(products, quizAnswers, 3), [products, quizAnswers]);
@@ -436,12 +471,35 @@ function App() {
 
   return <div className="site-shell">
     <a className="skip-link" href="#top">Skip to content</a>
+    <div className="announcement-bar">
+      <span>100% Authentic Guarantee</span>
+      <span>Free Shipping on Orders $100+</span>
+      <span>Easy Returns Within 30 Days</span>
+    </div>
     <header className={`nav ${navSolid ? 'nav-solid' : ''}`}>
       <button className="nav-icon" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Icon>☰</Icon></button>
       <a className="logo" href="#top">AURELIA <span>PARFUMS</span></a>
-      <nav aria-label="Primary"><a href="#discovery">Discovery sets</a><a href="#collection">Shop</a><a href="#gifts">Gifts</a><button onClick={() => setQuizOpen(true)}>Find your scent</button></nav>
+      <nav aria-label="Primary">
+        <ShopDropdown
+          open={shopMenuOpen}
+          onToggle={() => setShopMenuOpen((open) => !open)}
+          onClose={() => setShopMenuOpen(false)}
+          onShopNew={() => { shopByTerm('New'); setShopMenuOpen(false); }}
+        />
+        <a href="#best-sellers">Best Sellers</a>
+        <button onClick={() => setQuizOpen(true)}>Scent Finder</button>
+        <a href="#featured-brands">Brands</a>
+        <a href="#discovery">Discovery Sets</a>
+        <a href="#gifts">Gifts</a>
+      </nav>
       <div className="nav-actions">
         <button className="icon-btn" aria-label="Search fragrances" onClick={focusSearch}><Icon>⌕</Icon></button>
+        <button
+          className={`icon-btn${wishlistFilterOn ? ' active' : ''}`}
+          aria-label={wishlistFilterOn ? 'Show all fragrances' : 'Show saved fragrances'}
+          aria-pressed={wishlistFilterOn}
+          onClick={() => { setWishlistFilterOn((on) => !on); document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' }); }}
+        ><Icon>{wishlistFilterOn ? '♥' : '♡'}</Icon></button>
         <button className="bag" onClick={() => setCartOpen(true)} aria-label={`Open bag with ${itemCount} items`}><Icon>◇</Icon><span>Bag</span>{itemCount > 0 && <b>{itemCount}</b>}</button>
       </div>
     </header>
@@ -526,7 +584,11 @@ function App() {
             onOpen={openProduct}
             onQuickAdd={(p) => addBottle(p, p.sizes.find((size) => size.availableForSale)?.label)}
           />)}
-        </div> : <EmptyState
+        </div> : wishlistFilterOn ? <EmptyState
+          title="You haven't saved any fragrances yet."
+          description="Tap the heart icon on any product to save it here."
+          action={<Button variant="text" onClick={() => setWishlistFilterOn(false)}>Show all fragrances</Button>}
+        /> : <EmptyState
           title={`No fragrances match "${search}".`}
           description="Try a different note, family or spelling."
           action={<Button variant="text" onClick={clearFilters}>Clear search &amp; filters</Button>}
@@ -542,7 +604,7 @@ function App() {
         </div>
       </section>
 
-      <section className="brands-section" data-reveal>
+      <section id="featured-brands" className="brands-section" data-reveal>
         {featuredBrands.length >= 3 && <>
           <div className="section-intro"><p className="overline dark">Featured brands</p><h2>The designer houses we carry.</h2></div>
           <div className="brands-row">
