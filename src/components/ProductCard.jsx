@@ -68,13 +68,17 @@ export default function ProductCard({ product, mutating, wishlisted, onToggleWis
         <h3>{product.name}</h3>
         <span>{product.summary}</span>
         <div>
+          {/* No rating/review stars here by design: this store has no real
+              rating data source anywhere, and inventing one would violate
+              the site's never-fabricate-customer-facing-data rule. Hierarchy
+              stops at price/savings, which is real. */}
           <div className="card-price">
             {product.availableForSale ? <>
-              <strong>From {money(product.price)}</strong>
-              {product.compareAtPrice && <>
-                <s className="compare-price">{money(product.compareAtPrice)}</s>
-                <span className="savings-note">Save {money(savingsAmount)} ({savingsPercent}%)</span>
-              </>}
+              <span className="price-now-wrap">
+                <strong>From {money(product.price)}</strong>
+                {product.compareAtPrice && <s className="compare-price">{money(product.compareAtPrice)}</s>}
+              </span>
+              {product.compareAtPrice && <span className="savings-note">Save {money(savingsAmount)} ({savingsPercent}%)</span>}
             </> : <strong>Sold out</strong>}
           </div>
           <div className="product-actions">
