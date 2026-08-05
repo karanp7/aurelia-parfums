@@ -716,10 +716,16 @@ function App() {
           <p className="shipping-note">Ground-shipping availability and delivery estimates are confirmed at checkout.</p>
           {relatedProducts.length > 0 && <div className="related-rail">
             <p className="overline dark">You may also like</p>
-            <div className="related-grid">{relatedProducts.map((product) => <button key={product.id} className="related-card" onClick={() => openProduct(product)}>
-              <div className={`related-art tone-bg-${product.tone}`}><PerfumeBottle tone={product.tone} compact image={product.image} alt={product.imageAlt || product.name}/></div>
-              <span>{product.name}</span>
-            </button>)}</div>
+            <div className="rail-row">{relatedProducts.map((product) => <ProductCard
+              key={product.id}
+              product={product}
+              size="rail"
+              mutating={mutating}
+              wishlisted={wishlist.includes(product.id)}
+              onToggleWishlist={toggleWishlist}
+              onOpen={openProduct}
+              onQuickAdd={addBottle}
+            />)}</div>
           </div>}
         </div>
       </div>
@@ -733,6 +739,10 @@ function App() {
         familyOptions={familyOptions}
         discoveryEnabled={DISCOVERY_COMMERCE_ENABLED}
         discoveryPrice={discoveryProduct?.price ?? null}
+        wishlist={wishlist}
+        onToggleWishlist={toggleWishlist}
+        mutating={mutating}
+        onQuickAdd={addBottle}
         onAnswer={answerQuiz}
         onClose={closeQuiz}
         onRetake={retakeQuiz}
