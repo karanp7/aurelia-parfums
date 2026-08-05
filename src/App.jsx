@@ -6,6 +6,7 @@ import Dialog, { DialogClose } from './components/Dialog.jsx';
 import LoadingSkeleton, { CollectionHeaderSkeleton, FilterBarSkeleton } from './components/LoadingSkeleton.jsx';
 import EmptyState from './components/EmptyState.jsx';
 import ProductCard from './components/ProductCard.jsx';
+import ProductDetailPage from './components/ProductDetailPage.jsx';
 import FilterBar, { PRICE_BUCKETS } from './components/FilterBar.jsx';
 import FilterDrawer from './components/FilterDrawer.jsx';
 import { isShopifyConfigured } from './lib/shopify.js';
@@ -318,10 +319,22 @@ function App() {
     });
   }, [activeProduct?.id]);
 
+  // Product detail is now a real page (not an overlay), so it scrolls like
+  // one: jump to the top when navigating to a different product, the way a
+  // real page load would, instead of preserving whatever scroll position
+  // the previous page was at.
   useEffect(() => {
-    document.body.style.overflow = cartOpen || quizOpen || activeProduct || menuOpen ? 'hidden' : '';
+    if (handle) window.scrollTo(0, 0);
+  }, [handle]);
+
+  // `activeProduct` deliberately dropped from this condition — it used to
+  // lock body scroll because the product modal was an overlay on top of a
+  // scrollable page; now it's the page's own main content, so locking
+  // scroll here would make it permanently unscrollable.
+  useEffect(() => {
+    document.body.style.overflow = cartOpen || quizOpen || menuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [cartOpen, quizOpen, activeProduct, menuOpen]);
+  }, [cartOpen, quizOpen, menuOpen]);
 
   // Family options are derived from the real catalog instead of a fixed
   // list, so the filter and the quiz's "atmosphere" question always match
@@ -569,7 +582,6 @@ function App() {
   const answerQuiz = (value) => { setQuizAnswers((current) => ({ ...current, [quizStep]: value })); setQuizStep((step) => step + 1); };
 
   const menuDialogRef = useDialogA11y(menuOpen, () => setMenuOpen(false));
-  const productDialogRef = useDialogA11y(Boolean(activeProduct), closeProduct);
   const quizDialogRef = useDialogA11y(quizOpen, closeQuiz);
   const cartDialogRef = useDialogA11y(cartOpen, () => setCartOpen(false));
   const filterDrawerDialogRef = useDialogA11y(filterDrawerOpen, () => setFilterDrawerOpen(false));
@@ -621,6 +633,19 @@ function App() {
     </header>
 
     <main id="top" tabIndex={-1}>
+      {activeProduct ? <ProductDetailPage
+        product={activeProduct}
+        selectedSize={selectedSize}
+        onSelectSize={setSelectedSize}
+        mutating={mutating}
+        addBottle={addBottle}
+        onBack={closeProduct}
+        onSampleFirst={() => { closeProduct(); setQuizOpen(true); }}
+        relatedProducts={relatedProducts}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        openProduct={openProduct}
+      /> : <>
       <section ref={heroRef} className="hero-cinematic">
         <div className="hero-light" aria-hidden="true" />
         <div className="hero-copy">
@@ -828,6 +853,7 @@ function App() {
         <article><span>03</span><h3>Opened fragrance</h3><p>Opened bottles are generally not returnable for preference. Our sample-credit path is designed to prevent that costly mistake.</p></article>
         <article><span>04</span><h3>Shipping scope</h3><p>Ground delivery within the contiguous U.S. Final carrier, packaging and dangerous-goods rules are configured in Shopify shipping profiles.</p></article>
       </section>
+      </>}
     </main>
 
     <footer className="site-footer">
@@ -847,31 +873,6 @@ function App() {
     </footer>
 
     {menuOpen && <Dialog overlayClassName="menu-overlay" label="Mobile menu" dialogRef={menuDialogRef}><DialogClose onClick={() => setMenuOpen(false)} /><nav><a onClick={() => setMenuOpen(false)} href="#discovery">Discovery sets</a><a onClick={() => setMenuOpen(false)} href="#collection">Shop fragrances</a><a onClick={() => setMenuOpen(false)} href="#gifts">Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></Dialog>}
-
-    {activeProduct && <Dialog overlayClassName="modal-layer" label={`${activeProduct.name} details`} dialogRef={productDialogRef}>
-      <div className="product-modal">
-        <DialogClose onClick={closeProduct} />
-        <div className={`modal-art tone-bg-${activeProduct.tone}`}><PerfumeBottle tone={activeProduct.tone} image={activeProduct.image} alt={activeProduct.imageAlt || activeProduct.name}/></div>
-        <div className="modal-copy"><p className="overline dark">{activeProduct.house}</p><h2>{activeProduct.name}</h2><p className="plain-description">{activeProduct.description}</p>
-          <fieldset className="size-selector"><legend>Choose size</legend>{activeProduct.sizes.map((size) => <button key={size.variantId} disabled={!size.availableForSale} className={selectedSize === size.label ? 'selected' : ''} aria-pressed={selectedSize === size.label} onClick={() => setSelectedSize(size.label)}><span>{size.label}{!size.availableForSale ? ' · Sold out' : ''}</span><strong>{money(size.price)}</strong></button>)}</fieldset>
-          <div className="modal-actions"><Button disabled={mutating || !activeProduct.sizes.some((size) => size.availableForSale)} onClick={() => addBottle(activeProduct, selectedSize)}>Add to bag</Button><Button variant="text" onClick={() => { closeProduct(); setQuizOpen(true); }}>Sample it first in a matched set</Button></div>
-          <p className="shipping-note">Ground-shipping availability and delivery estimates are confirmed at checkout.</p>
-          {relatedProducts.length > 0 && <div className="related-rail">
-            <p className="overline dark">You may also like</p>
-            <div className="rail-row">{relatedProducts.map((product) => <ProductCard
-              key={product.id}
-              product={product}
-              size="rail"
-              mutating={mutating}
-              wishlisted={wishlist.includes(product.id)}
-              onToggleWishlist={toggleWishlist}
-              onOpen={openProduct}
-              onQuickAdd={addBottle}
-            />)}</div>
-          </div>}
-        </div>
-      </div>
-    </Dialog>}
 
     {quizOpen && <Suspense fallback={null}>
       <QuizModal
