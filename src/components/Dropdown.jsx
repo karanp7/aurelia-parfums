@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 // dropdown (Brand/Price/Availability/Size, and the visible-but-disabled
 // Gender/Season/Occasion/Concentration placeholders) share one building
 // block instead of each hand-rolling their own.
-export default function Dropdown({ label, options, value, onChange, className = '' }) {
+export default function Dropdown({ label, options, value, onChange, className = '', disabled = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const current = options.find((option) => option.value === value);
@@ -24,10 +24,10 @@ export default function Dropdown({ label, options, value, onChange, className = 
   }, [open]);
 
   return (
-    <div className={`filter-dropdown ${className}`} ref={ref}>
-      <button type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+    <div className={`filter-dropdown${disabled ? ' filter-dropdown--disabled' : ''} ${className}`} ref={ref}>
+      <button type="button" disabled={disabled} title={disabled ? 'Coming soon' : undefined} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <span className="filter-dropdown-label">{label}</span>
-        <span>{current?.label ?? 'All'}</span>
+        <span>{disabled ? 'Coming soon' : current?.label ?? 'All'}</span>
         <span aria-hidden="true">▾</span>
       </button>
       {open && <ul className="filter-dropdown-menu" role="listbox">

@@ -6,7 +6,7 @@ import Dialog, { DialogClose } from './components/Dialog.jsx';
 import LoadingSkeleton from './components/LoadingSkeleton.jsx';
 import EmptyState from './components/EmptyState.jsx';
 import ProductCard from './components/ProductCard.jsx';
-import Dropdown from './components/Dropdown.jsx';
+import FilterBar, { PRICE_BUCKETS } from './components/FilterBar.jsx';
 import { isShopifyConfigured } from './lib/shopify.js';
 import { fetchProducts, fetchProductByHandle } from './lib/shopifyProducts.js';
 import {
@@ -179,6 +179,10 @@ function App() {
   const [family, setFamily] = useState('All');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('best-selling');
+  const [brand, setBrand] = useState('All');
+  const [priceBucket, setPriceBucket] = useState('all');
+  const [availabilityOnly, setAvailabilityOnly] = useState(false);
+  const [sizeFilter, setSizeFilter] = useState('All');
 
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -308,19 +312,30 @@ function App() {
   const families = useMemo(() => ['All', ...new Set(products.map((product) => product.family))], [products]);
   const familyOptions = useMemo(() => families.filter((item) => item !== 'All'), [families]);
 
+  // Brand and Size options, same "derive from the real catalog" pattern as
+  // family above — never a fixed/guessed list.
+  const brandOptions = useMemo(() => [...new Set(products.map((product) => product.house))].sort(), [products]);
+  const sizeOptions = useMemo(() => [...new Set(products.flatMap((product) => product.sizes.map((size) => size.label)))], [products]);
+
   // Real, not fabricated: driven by the actual `family` filter (Shopify
   // productType) rather than inventing a separate page per marketing
   // category — "Woody Fragrances" only ever appears if products in that
   // real family exist in the catalog.
   const collectionHeading = family === 'All' ? 'All Fragrances' : `${family} Fragrances`;
 
-  const filtered = products.filter((product) => {
+  const filtered = useMemo(() => products.filter((product) => {
     const searchable = [product.name, product.house, product.family, product.summary, product.description, ...(product.tags || [])]
       .join(' ')
       .toLowerCase();
     const matchesWishlist = !wishlistFilterOn || wishlist.includes(product.id);
-    return (family === 'All' || product.family === family) && searchable.includes(search.toLowerCase()) && matchesWishlist;
-  });
+    const matchesBrand = brand === 'All' || product.house === brand;
+    const matchesAvailability = !availabilityOnly || product.availableForSale;
+    const matchesSize = sizeFilter === 'All' || product.sizes.some((size) => size.label === sizeFilter);
+    const matchesPrice = PRICE_BUCKETS.find((bucket) => bucket.value === priceBucket)?.test(product.price) ?? true;
+    return (family === 'All' || product.family === family)
+      && searchable.includes(search.toLowerCase())
+      && matchesWishlist && matchesBrand && matchesAvailability && matchesSize && matchesPrice;
+  }), [products, family, search, wishlistFilterOn, wishlist, brand, availabilityOnly, sizeFilter, priceBucket]);
 
   const quizMatches = useMemo(() => rankMatches(products, quizAnswers, 3), [products, quizAnswers]);
 
@@ -491,7 +506,9 @@ function App() {
     document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
     window.requestAnimationFrame(() => searchInputRef.current?.focus());
   };
-  const clearFilters = () => { setSearch(''); setFamily('All'); };
+  const clearFilters = () => {
+    setSearch(''); setFamily('All'); setBrand('All'); setPriceBucket('all'); setAvailabilityOnly(false); setSizeFilter('All');
+  };
 
   const toggleWishlist = (productId) => setWishlist((current) => {
     const next = toggleWishlistId(productId, current);
@@ -687,11 +704,16 @@ function App() {
           <span aria-current="page">{collectionHeading}</span>
         </nav>
         <div className="collection-head"><div><p className="overline dark">{family === 'All' ? 'Full bottles' : family}</p><h2>{collectionHeading}</h2></div><p>Discover authentic designer fragrances at exceptional prices.</p></div>
-        <div className="finder-row">
-          <label><span className="sr-only">Search fragrances</span><Icon>⌕</Icon><input ref={searchInputRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search rose, woods, fresh, evening…"/></label>
-          <div className="family-tabs" role="group" aria-label="Filter by fragrance family">{families.map((item) => <button key={item} className={family === item ? 'active' : ''} aria-pressed={family === item} onClick={() => setFamily(item)}>{item}</button>)}</div>
-          <Dropdown className="sort-dropdown" label="Sort by" value={sort} onChange={setSort} options={Object.entries(SORT_OPTIONS).map(([value, option]) => ({ value, label: option.label }))} />
-        </div>
+        <FilterBar
+          searchInputRef={searchInputRef}
+          search={search} onSearchChange={setSearch}
+          family={family} familyOptions={familyOptions} onFamilyChange={setFamily}
+          brand={brand} brandOptions={brandOptions} onBrandChange={setBrand}
+          priceBucket={priceBucket} onPriceBucketChange={setPriceBucket}
+          availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
+          sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
+          sort={sort} sortOptions={Object.entries(SORT_OPTIONS).map(([value, option]) => ({ value, label: option.label }))} onSortChange={setSort}
+        />
         {productsLoading ? <LoadingSkeleton count={6} />
           : productsError ? <EmptyState title="Couldn't load the catalog." description={productsError} />
           : filtered.length ? <div className="product-grid">
