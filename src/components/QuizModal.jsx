@@ -1,5 +1,7 @@
 import React from 'react';
 import PerfumeBottle from './PerfumeBottle.jsx';
+import Dialog, { DialogClose } from './Dialog.jsx';
+import Button from './Button.jsx';
 import { MOOD_TAGS, INTENSITY_TAGS } from '../lib/shopifyProducts.js';
 
 function QuizQuestion({ eyebrow, title, options, onAnswer }) {
@@ -7,9 +9,9 @@ function QuizQuestion({ eyebrow, title, options, onAnswer }) {
 }
 
 export default function QuizModal({ quizStep, quizAnswers, quizMatches, familyOptions, discoveryPrice, onAnswer, onClose, onRetake, onAddSet, dialogRef }) {
-  return <div className="overlay quiz-layer" role="dialog" aria-modal="true" aria-label="Scent finder" ref={dialogRef} tabIndex={-1}>
+  return <Dialog overlayClassName="quiz-layer" label="Scent finder" dialogRef={dialogRef}>
     <div className="quiz-modal">
-      <button className="close" onClick={onClose} aria-label="Close quiz">×</button>
+      <DialogClose onClick={onClose} label="Close quiz" />
       <div className="quiz-progress"><span style={{ width: `${Math.min(100, ((quizStep + 1) / 5) * 100)}%` }}/></div>
       {quizStep === 0 && <QuizQuestion eyebrow="First, who is this for?" title="Are you choosing for yourself or someone else?" options={['Myself', 'Gift']} onAnswer={onAnswer}/>}
       {quizStep === 1 && <QuizQuestion eyebrow="The atmosphere" title="Which direction feels most natural?" options={familyOptions} onAnswer={onAnswer}/>}
@@ -21,10 +23,10 @@ export default function QuizModal({ quizStep, quizAnswers, quizMatches, familyOp
         <p>Varied enough to learn from, connected enough to feel personal.</p>
         <div className="result-grid">{quizMatches.map((product, index) => <article key={product.id}><span>{index === 0 ? 'Strongest match' : index === 1 ? 'Softer alternative' : 'More adventurous'}</span><div className={`mini-art tone-bg-${product.tone}`}><PerfumeBottle tone={product.tone} compact image={product.image} alt={product.imageAlt || product.name}/></div><h3>{product.name}</h3><p>{product.summary}</p></article>)}</div>
         {discoveryPrice != null
-          ? <button className="btn btn-dark full" onClick={onAddSet}>Try all three — ${discoveryPrice}</button>
+          ? <Button full onClick={onAddSet}>Try all three — ${discoveryPrice}</Button>
           : <p className="quiz-unavailable">Discovery sets aren't available to purchase yet.</p>}
         <button className="retake" onClick={onRetake}>Retake quiz</button>
       </div>}
     </div>
-  </div>;
+  </Dialog>;
 }

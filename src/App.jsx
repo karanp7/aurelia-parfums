@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useLocation, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
+import Button from './components/Button.jsx';
+import Badge from './components/Badge.jsx';
+import Dialog, { DialogClose } from './components/Dialog.jsx';
+import LoadingSkeleton from './components/LoadingSkeleton.jsx';
+import EmptyState from './components/EmptyState.jsx';
 import { isShopifyConfigured } from './lib/shopify.js';
 import { fetchProducts, fetchProductByHandle } from './lib/shopifyProducts.js';
 import {
@@ -381,8 +386,8 @@ function App() {
           <h1>Find the one<br/><em>before the bottle.</em></h1>
           <p className="lede">Take a two-minute scent quiz, try three intelligently matched fragrances at home, then use every dollar of your discovery set toward the full bottle you love.</p>
           <div className="hero-buttons">
-            <button className="btn btn-light" onClick={() => setQuizOpen(true)}>Find my scents <Icon>↗</Icon></button>
-            <button className="btn btn-ghost" disabled={!discoveryProduct || products.length < 3} onClick={() => addDiscoverySet(products.slice(0, 3))}>Try a starter set</button>
+            <Button variant="secondary" onClick={() => setQuizOpen(true)}>Find my scents <Icon>↗</Icon></Button>
+            <Button variant="ghost" disabled={!discoveryProduct || products.length < 3} onClick={() => addDiscoverySet(products.slice(0, 3))}>Try a starter set</Button>
           </div>
           <p className="hero-proof">3 × 2 ml samples · {discoveryPriceLabel} bottle credit · Ground shipping within the contiguous U.S.</p>
         </div>
@@ -422,7 +427,7 @@ function App() {
           <h2>Three considered matches.<br/>One confident decision.</h2>
           <p>Each set includes three 2 ml sprays—enough to wear each fragrance several times in different settings.</p>
           <ul><li>Personalized from your quiz results</li><li>{discoveryPriceLabel} credit toward an eligible full bottle</li><li>Credit delivered by email and valid for 45 days</li><li>Discovery sets are final sale; damaged items are replaced</li></ul>
-          <div className="price-action"><strong>{discoveryPriceLabel}</strong><button className="btn btn-dark" onClick={() => setQuizOpen(true)}>Build my set <Icon>↗</Icon></button></div>
+          <div className="price-action"><strong>{discoveryPriceLabel}</strong><Button onClick={() => setQuizOpen(true)}>Build my set <Icon>↗</Icon></Button></div>
         </div>
       </section>
 
@@ -432,24 +437,24 @@ function App() {
           <label><span className="sr-only">Search fragrances</span><Icon>⌕</Icon><input ref={searchInputRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search rose, woods, fresh, evening…"/></label>
           <div className="family-tabs" role="group" aria-label="Filter by fragrance family">{families.map((item) => <button key={item} className={family === item ? 'active' : ''} aria-pressed={family === item} onClick={() => setFamily(item)}>{item}</button>)}</div>
         </div>
-        {productsLoading ? <div className="no-results"><h3>Loading fragrances…</h3></div>
-          : productsError ? <div className="no-results"><h3>Couldn't load the catalog.</h3><p>{productsError}</p></div>
+        {productsLoading ? <LoadingSkeleton count={6} />
+          : productsError ? <EmptyState title="Couldn't load the catalog." description={productsError} />
           : filtered.length ? <div className="product-grid">
           {filtered.map((product) => <article className="product-card" key={product.id}>
             <button className="product-image" onClick={() => openProduct(product)} aria-label={`View ${product.name}`}>
-              <div className={`product-backdrop tone-bg-${product.tone}`}/>{product.badge && <span className="tag">{product.badge}</span>}<div className="bottle-wrap"><PerfumeBottle tone={product.tone} compact image={product.image} alt={product.imageAlt || product.name}/></div><span className="view-hint">Explore fragrance</span>
+              <div className={`product-backdrop tone-bg-${product.tone}`}/>{product.badge && <Badge>{product.badge}</Badge>}<div className="bottle-wrap"><PerfumeBottle tone={product.tone} compact image={product.image} alt={product.imageAlt || product.name}/></div><span className="view-hint">Explore fragrance</span>
             </button>
             <div className="product-info"><p>{product.house}</p><h3>{product.name}</h3><span>{product.summary}</span><div><strong>{product.availableForSale ? `From ${money(product.sizes[0]?.price || 0)}` : 'Sold out'}</strong><div className="product-actions"><button disabled={!product.availableForSale || mutating} onClick={() => addBottle(product, product.sizes.find((size) => size.availableForSale)?.label)}>Quick add</button><button onClick={() => openProduct(product)}>Choose size <Icon>＋</Icon></button></div></div></div>
           </article>)}
-        </div> : <div className="no-results">
-          <h3>No fragrances match “{search}”.</h3>
-          <p>Try a different note, family or spelling.</p>
-          <button className="text-button" onClick={clearFilters}>Clear search &amp; filters</button>
-        </div>}
+        </div> : <EmptyState
+          title={`No fragrances match "${search}".`}
+          description="Try a different note, family or spelling."
+          action={<Button variant="text" onClick={clearFilters}>Clear search &amp; filters</Button>}
+        />}
       </section>
 
       <section id="gifts" className="gift-section" data-reveal>
-        <div className="gift-copy"><p className="overline">Fragrance, made easier to give</p><h2>A thoughtful gift<br/>without pretending to know.</h2><p>Choose a personalized discovery set, add a message and let the recipient use the value toward the fragrance they love.</p><div className="gift-points"><span>Complimentary gift note</span><span>Price-hidden receipt</span><span>Optional gift wrap</span><span>Digital gift cards</span></div><button className="btn btn-light" onClick={() => { setQuizAnswers({0:'Gift'}); setQuizStep(1); setQuizOpen(true); }}>Find a gift <Icon>↗</Icon></button></div>
+        <div className="gift-copy"><p className="overline">Fragrance, made easier to give</p><h2>A thoughtful gift<br/>without pretending to know.</h2><p>Choose a personalized discovery set, add a message and let the recipient use the value toward the fragrance they love.</p><div className="gift-points"><span>Complimentary gift note</span><span>Price-hidden receipt</span><span>Optional gift wrap</span><span>Digital gift cards</span></div><Button variant="secondary" onClick={() => { setQuizAnswers({0:'Gift'}); setQuizStep(1); setQuizOpen(true); }}>Find a gift <Icon>↗</Icon></Button></div>
         <div className="gift-art" aria-hidden="true"><div className="gift-box"><span>AURELIA</span><i/></div></div>
       </section>
 
@@ -468,21 +473,21 @@ function App() {
         <label htmlFor="footer-email">Get first access to new fragrances</label>
         {signupDone ? <p className="signup-done">Thanks — we'll be in touch.</p> : <div className="signup-row">
           <input id="footer-email" type="email" required value={signupEmail} onChange={(event) => setSignupEmail(event.target.value)} placeholder="you@email.com"/>
-          <button className="btn btn-light" type="submit">Sign up</button>
+          <Button variant="secondary" type="submit">Sign up</Button>
         </div>}
       </form>
       <p>Storefront by Aurelia Parfums · Powered by Shopify.</p>
     </footer>
 
-    {menuOpen && <div className="overlay menu-overlay" role="dialog" aria-modal="true" aria-label="Mobile menu" ref={menuDialogRef} tabIndex={-1}><button className="close" onClick={() => setMenuOpen(false)}>×</button><nav><a onClick={() => setMenuOpen(false)} href="#discovery">Discovery sets</a><a onClick={() => setMenuOpen(false)} href="#collection">Shop fragrances</a><a onClick={() => setMenuOpen(false)} href="#gifts">Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></div>}
+    {menuOpen && <Dialog overlayClassName="menu-overlay" label="Mobile menu" dialogRef={menuDialogRef}><DialogClose onClick={() => setMenuOpen(false)} /><nav><a onClick={() => setMenuOpen(false)} href="#discovery">Discovery sets</a><a onClick={() => setMenuOpen(false)} href="#collection">Shop fragrances</a><a onClick={() => setMenuOpen(false)} href="#gifts">Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></Dialog>}
 
-    {activeProduct && <div className="overlay modal-layer" role="dialog" aria-modal="true" aria-label={`${activeProduct.name} details`} ref={productDialogRef} tabIndex={-1}>
+    {activeProduct && <Dialog overlayClassName="modal-layer" label={`${activeProduct.name} details`} dialogRef={productDialogRef}>
       <div className="product-modal">
-        <button className="close" onClick={closeProduct} aria-label="Close">×</button>
+        <DialogClose onClick={closeProduct} />
         <div className={`modal-art tone-bg-${activeProduct.tone}`}><PerfumeBottle tone={activeProduct.tone} image={activeProduct.image} alt={activeProduct.imageAlt || activeProduct.name}/></div>
         <div className="modal-copy"><p className="overline dark">{activeProduct.house}</p><h2>{activeProduct.name}</h2><p className="plain-description">{activeProduct.description}</p>
           <fieldset className="size-selector"><legend>Choose size</legend>{activeProduct.sizes.map((size) => <button key={size.variantId} disabled={!size.availableForSale} className={selectedSize === size.label ? 'selected' : ''} aria-pressed={selectedSize === size.label} onClick={() => setSelectedSize(size.label)}><span>{size.label}{!size.availableForSale ? ' · Sold out' : ''}</span><strong>{money(size.price)}</strong></button>)}</fieldset>
-          <div className="modal-actions"><button className="btn btn-dark" disabled={mutating || !activeProduct.sizes.some((size) => size.availableForSale)} onClick={() => addBottle(activeProduct, selectedSize)}>Add to bag</button><button className="text-button" onClick={() => { closeProduct(); setQuizOpen(true); }}>Sample it first in a matched set</button></div>
+          <div className="modal-actions"><Button disabled={mutating || !activeProduct.sizes.some((size) => size.availableForSale)} onClick={() => addBottle(activeProduct, selectedSize)}>Add to bag</Button><Button variant="text" onClick={() => { closeProduct(); setQuizOpen(true); }}>Sample it first in a matched set</Button></div>
           <p className="shipping-note">Ground-shipping availability and delivery estimates are confirmed at checkout.</p>
           {relatedProducts.length > 0 && <div className="related-rail">
             <p className="overline dark">You may also like</p>
@@ -493,7 +498,7 @@ function App() {
           </div>}
         </div>
       </div>
-    </div>}
+    </Dialog>}
 
     {quizOpen && <Suspense fallback={null}>
       <QuizModal
@@ -510,9 +515,9 @@ function App() {
       />
     </Suspense>}
 
-    {cartOpen && <div className="overlay align-right" role="dialog" aria-modal="true" aria-label="Shopping bag" ref={cartDialogRef} tabIndex={-1}><div className="cart-drawer"><div className="drawer-head"><h2>Your bag</h2><button className="close static" onClick={() => setCartOpen(false)}>×</button></div>
+    {cartOpen && <Dialog overlayClassName="align-right" label="Shopping bag" dialogRef={cartDialogRef}><div className="cart-drawer"><div className="drawer-head"><h2>Your bag</h2><DialogClose onClick={() => setCartOpen(false)} className="static" /></div>
       {cartError && <p className="cart-error">{cartError}</p>}
-      {cartLoading ? <div className="empty"><h3>Loading your bag…</h3></div> : !cart?.lines?.length ? <div className="empty"><h3>Nothing chosen yet.</h3><p>Start with a personalized discovery set if you are still learning what you love.</p><button className="btn btn-dark" onClick={() => {setCartOpen(false);setQuizOpen(true);}}>Find my scents</button></div> : <>
+      {cartLoading ? <EmptyState className="empty" title="Loading your bag…" /> : !cart?.lines?.length ? <EmptyState className="empty" title="Nothing chosen yet." description="Start with a personalized discovery set if you are still learning what you love." action={<Button onClick={() => {setCartOpen(false);setQuizOpen(true);}}>Find my scents</Button>} /> : <>
         <div className="shipping-progress"><div><strong>{shippingRemaining > 0 ? `${money(shippingRemaining)} away from complimentary ground shipping` : 'Complimentary ground shipping unlocked'}</strong><span>Contiguous U.S. only</span></div><i><b style={{width:`${shippingProgress}%`}}/></i></div>
         <div className="cart-list">{cart.lines.map((line) => <article key={line.lineId}><div className="cart-art">{line.type === 'discovery' ? <div className="mini-set">3</div> : line.type === 'gift-wrap' ? <div className="mini-set" aria-hidden="true">GW</div> : <PerfumeBottle tone="rose" compact image={line.image} alt={line.imageAlt || line.name}/>}</div><div><small>{line.type === 'discovery' ? 'Discovery set' : line.type === 'gift-wrap' ? 'Gift wrap' : line.name}</small><h3>{line.type === 'discovery' ? 'Personal discovery set' : line.name}</h3><p>{line.size}</p>{line.matches && <p>{line.matches.join(' · ')}</p>}{line.type !== 'gift-wrap' && <div className="quantity"><button onClick={() => updateQuantity(line, -1)} aria-label={`Decrease quantity of ${line.name}`}>−</button><span>{line.quantity}</span><button onClick={() => updateQuantity(line, 1)} aria-label={`Increase quantity of ${line.name}`}>＋</button></div>}</div><strong>{money(line.lineTotal)}</strong></article>)}</div>
         <div className="cart-options">
@@ -530,9 +535,9 @@ function App() {
           />
         </div>
         {crossSell.product && <div className="smart-pair"><p className="overline dark">A useful next step</p>{crossSell.type === 'discovery' ? <><h3>Not completely sure?</h3><p>Try three matches before opening another full bottle. The {money(crossSell.product.price)} becomes bottle credit.</p><button disabled={mutating} onClick={() => addDiscoverySet(products.slice(0,3))}>Add discovery set — {money(crossSell.product.price)}</button></> : <><h3>{crossSell.product.name}</h3><p>Your discovery set can lead into this full bottle once you have worn it at home.</p><button disabled={mutating} onClick={() => addBottle(crossSell.product, crossSell.product.sizes[0]?.label)}>Add {crossSell.product.sizes[0]?.label} — {money(crossSell.product.price)}</button></>}</div>}
-        <div className="checkout"><div><span>Subtotal</span><strong>{money(subtotal)}</strong></div><small>Taxes and eligible ground-shipping rates are calculated at checkout.</small><div className="payment-badges"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span><span>Shop Pay</span></div><a className="btn btn-dark" href={cart?.checkoutUrl || undefined} style={{opacity: cart?.checkoutUrl ? 1 : .5, pointerEvents: cart?.checkoutUrl ? 'auto' : 'none'}}>Checkout <Icon>→</Icon></a><p>Secure checkout is hosted by Shopify. No account required.</p></div>
+        <div className="checkout"><div><span>Subtotal</span><strong>{money(subtotal)}</strong></div><small>Taxes and eligible ground-shipping rates are calculated at checkout.</small><div className="payment-badges"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span><span>Shop Pay</span></div><Button href={cart?.checkoutUrl || undefined} style={{opacity: cart?.checkoutUrl ? 1 : .5, pointerEvents: cart?.checkoutUrl ? 'auto' : 'none'}}>Checkout <Icon>→</Icon></Button><p>Secure checkout is hosted by Shopify. No account required.</p></div>
       </>}
-    </div></div>}
+    </div></Dialog>}
   </div>;
 }
 
