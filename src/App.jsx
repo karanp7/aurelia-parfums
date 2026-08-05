@@ -637,7 +637,7 @@ function App() {
     <div className="announcement-bar">
       <span>100% Authentic Guarantee</span>
       <span>Free Shipping on Orders $100+</span>
-      <span>Easy Returns Within 30 Days</span>
+      <span>30-Day Easy Returns</span>
     </div>
     <header className={`nav ${navSolid ? 'nav-solid' : ''}`}>
       <button className="nav-icon" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Icon name="menu"/></button>
@@ -701,10 +701,10 @@ function App() {
       </section>
 
       <section className="trust-row" aria-label="Store commitments">
-        <div><strong>100% Authentic Guarantee</strong><span>Sourced through trusted, authorized channels</span></div>
-        <div><strong>Fast U.S. Shipping</strong><span>Ground delivery, fragrance-safe fulfillment</span></div>
-        <div><strong>Luxury Gift Packaging</strong><span>Optional gift wrap at checkout</span></div>
-        <div><strong>30-Day Easy Returns</strong><span>Unopened bottles, no questions asked</span></div>
+        <div><Icon name="check" size={14}/><strong>100% Authentic Guarantee</strong><span>Sourced through trusted, authorized channels</span></div>
+        <div><Icon name="check" size={14}/><strong>Free Shipping on Orders $100+</strong><span>Fast, fragrance-safe ground shipping within the U.S.</span></div>
+        <div><Icon name="check" size={14}/><strong>Luxury Gift Packaging</strong><span>Optional gift wrap at checkout</span></div>
+        <div><Icon name="check" size={14}/><strong>30-Day Easy Returns</strong><span>Unopened bottles, no questions asked</span></div>
       </section>
 
       <section id="best-sellers" className="bestsellers-section" data-reveal>

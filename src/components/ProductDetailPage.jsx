@@ -34,14 +34,6 @@ const STICK_OFFSET = 130;
 // (announcement bar, trust row, policies) - reused here rather than
 // restated with different wording/numbers, so the site never makes two
 // slightly different promises about the same thing.
-const TRUST_ITEMS = [
-  '100% Authentic Guarantee',
-  'Ships from the U.S.',
-  'Fast, Fragrance-Safe Shipping',
-  'Easy Returns Within 30 Days',
-  'Secure Shopify Checkout'
-];
-
 const NOTE_TIERS = [
   { key: 'top', label: 'Top Notes' },
   { key: 'heart', label: 'Heart Notes' },
@@ -71,6 +63,11 @@ const WHY_BUY_ITEMS = [
   '30-Day Easy Returns',
   'Secure Shopify Checkout — No Account Required'
 ];
+
+// The sticky purchase box's short trust list and the dedicated Why Buy
+// section below describe the identical 5 facts on the same page — one
+// array instead of two independently-worded lists that can drift apart.
+const TRUST_ITEMS = WHY_BUY_ITEMS;
 
 export default function ProductDetailPage({
   product, selectedSize, onSelectSize, mutating, addBottle, buyNow, onBack, onSampleFirst,
