@@ -67,6 +67,34 @@ test('mapShopifyProduct truncates the summary from the real description rather t
   assert.ok(longDescription.startsWith(product.summary.replace('…', '').trim()));
 });
 
+test('mapShopifyProduct only shows a real Shopify compareAtPrice, and only when it is actually a discount', () => {
+  const discounted = mapShopifyProduct(productNode({
+    variants: { nodes: [{ id: 'gid://shopify/ProductVariant/1', title: '30 ml', availableForSale: true, price: { amount: '98.0' }, compareAtPrice: { amount: '148.0' }, selectedOptions: [] }] }
+  }));
+  assert.equal(discounted.compareAtPrice, 148, 'real Shopify compare-at value is surfaced');
+  assert.equal(discounted.sizes[0].compareAtPrice, 148);
+
+  const noDiscount = mapShopifyProduct(productNode({
+    variants: { nodes: [{ id: 'gid://shopify/ProductVariant/1', title: '30 ml', availableForSale: true, price: { amount: '98.0' }, selectedOptions: [] }] }
+  }));
+  assert.equal(noDiscount.compareAtPrice, null, 'no compareAtPrice set on the variant -> no fabricated savings');
+
+  const bogusDiscount = mapShopifyProduct(productNode({
+    variants: { nodes: [{ id: 'gid://shopify/ProductVariant/1', title: '30 ml', availableForSale: true, price: { amount: '98.0' }, compareAtPrice: { amount: '50.0' }, selectedOptions: [] }] }
+  }));
+  assert.equal(bogusDiscount.compareAtPrice, null, 'compareAtPrice <= price is not a real discount, so it is dropped rather than shown as negative savings');
+});
+
+test('mapShopifyProduct exposes vendorRaw separately from the store-name-coalesced house, so Featured Brands can tell the difference', () => {
+  const withVendor = mapShopifyProduct(productNode({ vendor: 'Dior' }));
+  assert.equal(withVendor.vendorRaw, 'Dior');
+  assert.equal(withVendor.house, 'Dior');
+
+  const withoutVendor = mapShopifyProduct(productNode({ vendor: '' }));
+  assert.equal(withoutVendor.vendorRaw, null, 'no real vendor set -> null, not the store name');
+  assert.equal(withoutVendor.house, 'Aurelia Parfums', 'house still falls back to the store name for display purposes');
+});
+
 test('deriveTone is a stable, deterministic decorative assignment (not a factual claim)', () => {
   const a = deriveTone('gid://shopify/Product/1001');
   const b = deriveTone('gid://shopify/Product/1001');

@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'rea
 import { useNavigate, useLocation, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import Button from './components/Button.jsx';
-import Badge from './components/Badge.jsx';
 import Dialog, { DialogClose } from './components/Dialog.jsx';
 import LoadingSkeleton from './components/LoadingSkeleton.jsx';
 import EmptyState from './components/EmptyState.jsx';
+import ProductCard from './components/ProductCard.jsx';
 import { isShopifyConfigured } from './lib/shopify.js';
 import { fetchProducts, fetchProductByHandle } from './lib/shopifyProducts.js';
 import {
@@ -13,6 +13,7 @@ import {
   LINE_TYPE_ATTRIBUTE_KEY, DISCOVERY_LINE_ATTRIBUTE_VALUE, GIFT_WRAP_LINE_ATTRIBUTE_VALUE, MATCHES_ATTRIBUTE_KEY
 } from './lib/shopifyCart.js';
 import { rankMatches, discoverySetKey, crossSellProduct } from './lib/cartLogic.js';
+import { readWishlist, toggleWishlistId, writeWishlist } from './lib/wishlist.js';
 
 // L-04 fix: the quiz and checkout-preview modals aren't needed on first
 // paint, so they're split into their own chunks and only fetched when opened.
@@ -122,6 +123,7 @@ function App() {
   const [giftMessage, setGiftMessage] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupDone, setSignupDone] = useState(false);
+  const [wishlist, setWishlist] = useState(() => readWishlist());
 
   const heroRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -343,6 +345,12 @@ function App() {
   };
   const clearFilters = () => { setSearch(''); setFamily('All'); };
 
+  const toggleWishlist = (productId) => setWishlist((current) => {
+    const next = toggleWishlistId(productId, current);
+    writeWishlist(next);
+    return next;
+  });
+
   const retakeQuiz = () => {
     setQuizAnswers((current) => ({ 0: current[0] }));
     setQuizStep(1);
@@ -440,12 +448,15 @@ function App() {
         {productsLoading ? <LoadingSkeleton count={6} />
           : productsError ? <EmptyState title="Couldn't load the catalog." description={productsError} />
           : filtered.length ? <div className="product-grid">
-          {filtered.map((product) => <article className="product-card" key={product.id}>
-            <button className="product-image" onClick={() => openProduct(product)} aria-label={`View ${product.name}`}>
-              <div className={`product-backdrop tone-bg-${product.tone}`}/>{product.badge && <Badge>{product.badge}</Badge>}<div className="bottle-wrap"><PerfumeBottle tone={product.tone} compact image={product.image} alt={product.imageAlt || product.name}/></div><span className="view-hint">Explore fragrance</span>
-            </button>
-            <div className="product-info"><p>{product.house}</p><h3>{product.name}</h3><span>{product.summary}</span><div><strong>{product.availableForSale ? `From ${money(product.sizes[0]?.price || 0)}` : 'Sold out'}</strong><div className="product-actions"><button disabled={!product.availableForSale || mutating} onClick={() => addBottle(product, product.sizes.find((size) => size.availableForSale)?.label)}>Quick add</button><button onClick={() => openProduct(product)}>Choose size <Icon>＋</Icon></button></div></div></div>
-          </article>)}
+          {filtered.map((product) => <ProductCard
+            key={product.id}
+            product={product}
+            mutating={mutating}
+            wishlisted={wishlist.includes(product.id)}
+            onToggleWishlist={toggleWishlist}
+            onOpen={openProduct}
+            onQuickAdd={(p) => addBottle(p, p.sizes.find((size) => size.availableForSale)?.label)}
+          />)}
         </div> : <EmptyState
           title={`No fragrances match "${search}".`}
           description="Try a different note, family or spelling."

@@ -19,6 +19,7 @@ const PRODUCT_FIELDS = `
       title
       availableForSale
       price { amount currencyCode }
+      compareAtPrice { amount currencyCode }
       selectedOptions { name value }
     }
   }
@@ -83,13 +84,22 @@ function truncate(text, max = 130) {
 export function mapShopifyProduct(node) {
   const images = node.images?.nodes || [];
   const tags = node.tags || [];
-  const sizes = (node.variants?.nodes || []).map((variant) => ({
-    variantId: variant.id,
-    label: variant.title === 'Default Title' ? 'Standard' : variant.title,
-    price: Number(variant.price.amount),
-    availableForSale: variant.availableForSale,
-    selectedOptions: variant.selectedOptions || []
-  }));
+  const sizes = (node.variants?.nodes || []).map((variant) => {
+    const price = Number(variant.price.amount);
+    // Only ever a real Shopify compare-at value — never computed/invented.
+    // Shopify treats compareAtPrice <= price as "no discount" (a merchant
+    // artifact, not a real markdown), so that case is dropped here too.
+    const compareAtRaw = variant.compareAtPrice?.amount ? Number(variant.compareAtPrice.amount) : null;
+    const compareAtPrice = compareAtRaw && compareAtRaw > price ? compareAtRaw : null;
+    return {
+      variantId: variant.id,
+      label: variant.title === 'Default Title' ? 'Standard' : variant.title,
+      price,
+      compareAtPrice,
+      availableForSale: variant.availableForSale,
+      selectedOptions: variant.selectedOptions || []
+    };
+  });
 
   return {
     id: shortId(node.id),
@@ -97,6 +107,11 @@ export function mapShopifyProduct(node) {
     handle: node.handle,
     name: node.title,
     house: node.vendor || 'Aurelia Parfums',
+    // Distinct from `house` above: null when Shopify's vendor field was
+    // never set, rather than coalesced to the store's own name — Featured
+    // Brands (Milestone 6) needs this to avoid listing the store itself as
+    // if it were a resold designer brand.
+    vendorRaw: node.vendor || null,
     family: node.productType || 'Fragrance',
     tags,
     mood: findTag(tags, MOOD_TAGS),
@@ -104,6 +119,7 @@ export function mapShopifyProduct(node) {
     badge: deriveBadge(tags),
     tone: deriveTone(node.id),
     price: sizes[0]?.price ?? Number(node.priceRange?.minVariantPrice?.amount ?? 0),
+    compareAtPrice: sizes[0]?.compareAtPrice ?? null,
     sizes,
     availableForSale: Boolean(node.availableForSale) && sizes.some((size) => size.availableForSale),
     summary: truncate(node.description),
