@@ -390,14 +390,14 @@ function App() {
       <section ref={heroRef} className="hero-cinematic">
         <div className="hero-light" aria-hidden="true" />
         <div className="hero-copy">
-          <p className="overline">Fragrance without the guesswork</p>
-          <h1>Find the one<br/><em>before the bottle.</em></h1>
-          <p className="lede">Take a two-minute scent quiz, try three intelligently matched fragrances at home, then use every dollar of your discovery set toward the full bottle you love.</p>
+          <p className="overline">Find your signature</p>
+          <h1>Authentic luxury fragrances.<br/><em>Better prices.</em></h1>
+          <p className="lede">100% genuine designer fragrances, yours to experience — take a two-minute scent quiz for a personalized match, or shop the best sellers directly.</p>
           <div className="hero-buttons">
-            <Button variant="secondary" onClick={() => setQuizOpen(true)}>Find my scents <Icon>↗</Icon></Button>
-            <Button variant="ghost" disabled={!discoveryProduct || products.length < 3} onClick={() => addDiscoverySet(products.slice(0, 3))}>Try a starter set</Button>
+            <Button variant="secondary" onClick={() => setQuizOpen(true)}>Find your scent <Icon>↗</Icon></Button>
+            <Button variant="ghost" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}>Shop best sellers</Button>
           </div>
-          <p className="hero-proof">3 × 2 ml samples · {discoveryPriceLabel} bottle credit · Ground shipping within the contiguous U.S.</p>
+          <p className="hero-proof">100% Authentic · Ground shipping within the contiguous U.S.</p>
         </div>
         <div className="hero-stage" aria-hidden="true">
           <div className="halo" />
@@ -413,10 +413,10 @@ function App() {
       </section>
 
       <section className="trust-row" aria-label="Store commitments">
-        <div><strong>Authenticity guaranteed</strong><span>Sourced through trusted partners</span></div>
-        <div><strong>Sample before committing</strong><span>Your set becomes bottle credit</span></div>
-        <div><strong>Guest checkout</strong><span>No account required</span></div>
-        <div><strong>Ground-shipping care</strong><span>Fragrance-safe fulfillment</span></div>
+        <div><strong>100% Authentic Guarantee</strong><span>Sourced through trusted, authorized channels</span></div>
+        <div><strong>Fast U.S. Shipping</strong><span>Ground delivery, fragrance-safe fulfillment</span></div>
+        <div><strong>Luxury Gift Packaging</strong><span>Optional gift wrap at checkout</span></div>
+        <div><strong>30-Day Easy Returns</strong><span>Unopened bottles, no questions asked</span></div>
       </section>
 
       <section id="discovery" className="discovery-story" data-reveal>
