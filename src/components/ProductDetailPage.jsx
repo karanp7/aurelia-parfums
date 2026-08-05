@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import Button from './Button.jsx';
 import ProductCard from './ProductCard.jsx';
@@ -29,13 +29,39 @@ function findConcentration(product) {
 // top of a section.
 const STICK_OFFSET = 130;
 
+const Icon = ({ children }) => <span aria-hidden="true">{children}</span>;
+
+// Every claim below already exists verbatim elsewhere on the site
+// (announcement bar, trust row, policies) - reused here rather than
+// restated with different wording/numbers, so the site never makes two
+// slightly different promises about the same thing.
+const TRUST_ITEMS = [
+  '100% Authentic Guarantee',
+  'Ships from the U.S.',
+  'Fast, Fragrance-Safe Shipping',
+  'Easy Returns Within 30 Days',
+  'Secure Shopify Checkout'
+];
+
+const WHY_BUY_ITEMS = [
+  '100% Authentic Guarantee',
+  'Free Shipping on Orders $100+',
+  'Fast, Fragrance-Safe U.S. Shipping',
+  '30-Day Easy Returns',
+  'Secure Shopify Checkout — No Account Required'
+];
+
 export default function ProductDetailPage({
   product, selectedSize, onSelectSize, mutating, addBottle, buyNow, onBack, onSampleFirst,
   relatedProducts, wishlist, toggleWishlist, openProduct
 }) {
   const [quantity, setQuantity] = useState(1);
   const prefersReducedMotion = useReducedMotion();
-  const { ref: boxRef, pinned, height: boxHeight, left: boxLeft, width: boxWidth } = useStickyOnScroll(STICK_OFFSET);
+  const productModalRef = useRef(null);
+  // Bounded to .product-modal (the two-column gallery+info area) so the box
+  // stops pinning once that area has scrolled past, instead of floating
+  // over the full-width Authenticity/Why Buy/Reviews content below it.
+  const { ref: boxRef, pinned, height: boxHeight, left: boxLeft, width: boxWidth } = useStickyOnScroll(STICK_OFFSET, productModalRef);
 
   // A fresh product page starts at quantity 1, not whatever was left over
   // from the last product viewed.
@@ -59,7 +85,7 @@ export default function ProductDetailPage({
   return (
     <div className="product-page">
       <button type="button" className="back-link" onClick={onBack}>← Back to shop</button>
-      <div className="product-modal">
+      <div className="product-modal" ref={productModalRef}>
         <ProductGallery product={product} />
         <div className="modal-copy">
           <p className="overline dark">{product.house}</p>
@@ -149,6 +175,12 @@ export default function ProductDetailPage({
 
               <Button variant="text" onClick={onSampleFirst}>Sample it first in a matched set</Button>
               <p className="shipping-note">Ground-shipping availability and delivery estimates are confirmed at checkout.</p>
+
+              <ul className="pdp-trust-list">
+                {TRUST_ITEMS.map((item) => (
+                  <li key={item}><Icon>✓</Icon> {item}</li>
+                ))}
+              </ul>
             </div>
           </div>
 
@@ -173,6 +205,39 @@ export default function ProductDetailPage({
           )}
         </div>
       </div>
+
+      <section className="authenticity-section">
+        <div className="section-intro">
+          <p className="overline dark">Authenticity</p>
+          <h2>Every bottle. 100% genuine.</h2>
+        </div>
+        <div className="journey-grid">
+          <article>
+            <span>01</span>
+            <h3>Trusted, authorized sourcing</h3>
+            <p>Every fragrance is sourced through trusted, authorized channels — never grey-market or unverified sellers.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>See exactly what you'll receive</h3>
+            <p>Product photography comes directly from real inventory — no stock images, no guesswork about what arrives.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Backed by our return policy</h3>
+            <p>Unopened bottles are eligible for return within 30 days when unused, sealed and in original condition.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="why-buy-section">
+        <p className="overline dark">Why buy from Aurelia</p>
+        <div className="why-buy-grid">
+          {WHY_BUY_ITEMS.map((item) => (
+            <div key={item} className="why-buy-item"><Icon>✓</Icon> {item}</div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

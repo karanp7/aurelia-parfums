@@ -23,9 +23,21 @@ import { useEffect, useRef, useState } from 'react';
 // viewport width like the Collection filter bar — that need to lock their
 // fixed-position box to the same horizontal space it occupied in flow,
 // the same way real `position: sticky` would.
-export function useStickyOnScroll(offset) {
+//
+// Optional `containerRef`: bounds how long the element stays pinned to the
+// container's own bottom edge, matching real `position: sticky`'s built-in
+// behavior of un-sticking once its containing block scrolls past. Without
+// this, an element pins for the rest of the page's scroll (fine for the
+// Collection filter bar, which is meant to stay visible over the whole
+// grid) — but a sidebar-style box like the PDP's purchase box would
+// otherwise keep floating over unrelated full-width sections below its own
+// column and visibly overlap/cut off their content (caught via a
+// Playwright screenshot: the pinned box covered the Authenticity
+// section's heading and third card).
+export function useStickyOnScroll(offset, containerRef) {
   const ref = useRef(null);
   const naturalTopRef = useRef(null);
+  const containerBottomRef = useRef(null);
   const [pinned, setPinned] = useState(false);
   const [rect, setRect] = useState({ height: 0, left: 0, width: 0 });
 
@@ -42,11 +54,22 @@ export function useStickyOnScroll(offset) {
       const box = ref.current.getBoundingClientRect();
       naturalTopRef.current = box.top + window.scrollY;
       setRect({ height: box.height, left: box.left, width: box.width });
+      if (containerRef?.current) {
+        containerBottomRef.current = containerRef.current.getBoundingClientRect().bottom + window.scrollY;
+      }
     };
     const onScroll = () => {
       if (!pinned) measure();
       if (naturalTopRef.current == null) return;
-      setPinned(window.scrollY + offset >= naturalTopRef.current);
+      const pastTop = window.scrollY + offset >= naturalTopRef.current;
+      // Deliberately doesn't factor the pinned element's own height into
+      // this check (i.e. doesn't require the whole box to fit above the
+      // container's bottom edge) - with a tall box that would leave almost
+      // no room to ever pin. Good enough to fix the actual bug (floating
+      // over unrelated full-width sections below the container) without
+      // being pixel-perfect about the box's trailing edge.
+      const withinContainer = containerBottomRef.current == null || window.scrollY + offset <= containerBottomRef.current;
+      setPinned(pastTop && withinContainer);
     };
     measure();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -56,7 +79,7 @@ export function useStickyOnScroll(offset) {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
-  }, [pinned, offset]);
+  }, [pinned, offset, containerRef]);
 
   return { ref, pinned, height: rect.height, left: rect.left, width: rect.width };
 }
