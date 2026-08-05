@@ -25,9 +25,13 @@ const PRODUCT_FIELDS = `
   }
 `;
 
+// Collection page sort options map straight onto Shopify's own
+// productSortKeys enum/reverse args - real server-side ordering (sales
+// rank, creation date, price, title), never a client-invented "popularity"
+// score. See SORT_OPTIONS in the caller for the label <-> key mapping.
 const PRODUCTS_QUERY = `
-  query StorefrontProducts($first: Int!) {
-    products(first: $first, sortKey: BEST_SELLING) {
+  query StorefrontProducts($first: Int!, $sortKey: ProductSortKeys, $reverse: Boolean) {
+    products(first: $first, sortKey: $sortKey, reverse: $reverse) {
       nodes { ${PRODUCT_FIELDS} }
     }
   }
@@ -130,8 +134,8 @@ export function mapShopifyProduct(node) {
   };
 }
 
-export async function fetchProducts(first = 24) {
-  const data = await shopifyFetch(PRODUCTS_QUERY, { first });
+export async function fetchProducts({ first = 24, sortKey = 'BEST_SELLING', reverse = false } = {}) {
+  const data = await shopifyFetch(PRODUCTS_QUERY, { first, sortKey, reverse });
   return (data.products?.nodes || []).map(mapShopifyProduct);
 }
 

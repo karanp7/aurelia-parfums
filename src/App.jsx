@@ -6,6 +6,7 @@ import Dialog, { DialogClose } from './components/Dialog.jsx';
 import LoadingSkeleton from './components/LoadingSkeleton.jsx';
 import EmptyState from './components/EmptyState.jsx';
 import ProductCard from './components/ProductCard.jsx';
+import Dropdown from './components/Dropdown.jsx';
 import { isShopifyConfigured } from './lib/shopify.js';
 import { fetchProducts, fetchProductByHandle } from './lib/shopifyProducts.js';
 import {
@@ -42,6 +43,19 @@ const DISCOVERY_COMMERCE_ENABLED = false;
 // whatever real products' tags/descriptions happen to reference it) and
 // scrolls to the shop grid. Tones reuse the same six decorative colors the
 // product cards already use, just for a different (non-product) surface.
+// Sort options map straight onto Shopify's own productSortKeys/reverse args
+// (see fetchProducts in shopifyProducts.js) - real server-side ordering,
+// not a client-invented ranking. "Highest Rated"/"Most Popular" are left
+// out: there's no real rating data anywhere in this Shopify integration,
+// and "Most Popular" would just be a second name for Best Sellers.
+const SORT_OPTIONS = {
+  'best-selling': { label: 'Best Sellers', sortKey: 'BEST_SELLING', reverse: false },
+  newest: { label: 'Newest', sortKey: 'CREATED', reverse: true },
+  'price-asc': { label: 'Price: Low to High', sortKey: 'PRICE', reverse: false },
+  'price-desc': { label: 'Price: High to Low', sortKey: 'PRICE', reverse: true },
+  alphabetical: { label: 'Alphabetical (A–Z)', sortKey: 'TITLE', reverse: false }
+};
+
 const MOOD_TILES = [
   { label: 'Date Night', tone: 'plum' },
   { label: 'Everyday', tone: 'cream' },
@@ -164,6 +178,7 @@ function ShopDropdown({ open, onToggle, onClose, onShopNew }) {
 function App() {
   const [family, setFamily] = useState('All');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('best-selling');
 
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -199,17 +214,30 @@ function App() {
   const location = useLocation();
   useReveal();
 
-  // Load the catalog, the two optional placeholder products, and the cart
-  // once on mount. Each is independent — a slow/missing discovery-set
-  // product must never block the main catalog from rendering.
+  // Sort changes (including the initial mount) refetch straight from
+  // Shopify with the matching sortKey/reverse rather than re-sorting
+  // client-side — keeps every sort option, including the default Best
+  // Sellers, backed by Shopify's own real ordering.
   useEffect(() => {
-    if (!isShopifyConfigured) { setProductsLoading(false); setCartLoading(false); return undefined; }
+    if (!isShopifyConfigured) { setProductsLoading(false); return undefined; }
     let cancelled = false;
+    setProductsLoading(true);
+    const { sortKey, reverse } = SORT_OPTIONS[sort];
 
-    fetchProducts()
+    fetchProducts({ sortKey, reverse })
       .then((list) => { if (!cancelled) setProducts(list); })
       .catch((error) => { if (!cancelled) setProductsError(error.message); })
       .finally(() => { if (!cancelled) setProductsLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [sort]);
+
+  // Load the two optional placeholder products and the cart once on mount.
+  // Each is independent — a slow/missing discovery-set product must never
+  // block the main catalog from rendering.
+  useEffect(() => {
+    if (!isShopifyConfigured) { setCartLoading(false); return undefined; }
+    let cancelled = false;
 
     fetchProductByHandle(DISCOVERY_SET_HANDLE)
       .then((product) => { if (!cancelled) setDiscoveryProduct(product); })
@@ -279,6 +307,12 @@ function App() {
   // whatever productType values actually exist in Shopify.
   const families = useMemo(() => ['All', ...new Set(products.map((product) => product.family))], [products]);
   const familyOptions = useMemo(() => families.filter((item) => item !== 'All'), [families]);
+
+  // Real, not fabricated: driven by the actual `family` filter (Shopify
+  // productType) rather than inventing a separate page per marketing
+  // category — "Woody Fragrances" only ever appears if products in that
+  // real family exist in the catalog.
+  const collectionHeading = family === 'All' ? 'All Fragrances' : `${family} Fragrances`;
 
   const filtered = products.filter((product) => {
     const searchable = [product.name, product.house, product.family, product.summary, product.description, ...(product.tags || [])]
@@ -647,10 +681,16 @@ function App() {
       </section>
 
       <section id="collection" className="collection" data-reveal>
-        <div className="collection-head"><div><p className="overline dark">Full bottles</p><h2>For when you already know.</h2></div><p>Clear descriptions and real product details, pulled straight from the shop.</p></div>
+        <nav className="breadcrumb" aria-label="Breadcrumb">
+          <a href="#top">Home</a><span aria-hidden="true">/</span>
+          <a href="#collection">Shop</a><span aria-hidden="true">/</span>
+          <span aria-current="page">{collectionHeading}</span>
+        </nav>
+        <div className="collection-head"><div><p className="overline dark">{family === 'All' ? 'Full bottles' : family}</p><h2>{collectionHeading}</h2></div><p>Discover authentic designer fragrances at exceptional prices.</p></div>
         <div className="finder-row">
           <label><span className="sr-only">Search fragrances</span><Icon>⌕</Icon><input ref={searchInputRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search rose, woods, fresh, evening…"/></label>
           <div className="family-tabs" role="group" aria-label="Filter by fragrance family">{families.map((item) => <button key={item} className={family === item ? 'active' : ''} aria-pressed={family === item} onClick={() => setFamily(item)}>{item}</button>)}</div>
+          <Dropdown className="sort-dropdown" label="Sort by" value={sort} onChange={setSort} options={Object.entries(SORT_OPTIONS).map(([value, option]) => ({ value, label: option.label }))} />
         </div>
         {productsLoading ? <LoadingSkeleton count={6} />
           : productsError ? <EmptyState title="Couldn't load the catalog." description={productsError} />
