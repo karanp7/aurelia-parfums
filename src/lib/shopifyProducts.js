@@ -2,6 +2,16 @@ import { shopifyFetch, shortId } from './shopify.js';
 
 // Kept intentionally small — Storefront API fields that exist on every
 // Shopify product with zero setup, no metafields required.
+//
+// The metafield fields below are the one exception: they're real extension
+// points for the Product Detail Page's Fragrance Pyramid / Performance /
+// Occasions sections, which stay hidden until a merchant actually sets
+// them (see mapShopifyProduct below and PRODUCT_METAFIELD_KEYS at the
+// bottom of this file for the exact namespace/key each one needs). Safe to
+// request unconditionally: Shopify returns `null` for an unset metafield
+// rather than erroring the query, unlike e.g. `quantityAvailable`, which
+// requires a shop-level Storefront API setting and was deliberately left
+// out for that reason.
 const PRODUCT_FIELDS = `
   id
   handle
@@ -23,6 +33,13 @@ const PRODUCT_FIELDS = `
       selectedOptions { name value }
     }
   }
+  topNotes: metafield(namespace: "custom", key: "top_notes") { value }
+  heartNotes: metafield(namespace: "custom", key: "heart_notes") { value }
+  baseNotes: metafield(namespace: "custom", key: "base_notes") { value }
+  longevity: metafield(namespace: "custom", key: "longevity") { value }
+  projection: metafield(namespace: "custom", key: "projection") { value }
+  versatility: metafield(namespace: "custom", key: "versatility") { value }
+  occasions: metafield(namespace: "custom", key: "occasions") { value }
 `;
 
 // Collection page sort options map straight onto Shopify's own
@@ -78,6 +95,33 @@ function deriveBadge(tags) {
   return null;
 }
 
+// Parses a metafield value into a list, defensively - works whether a
+// merchant configures it as a `list.single_line_text_field` (Storefront
+// API returns that as a JSON-encoded array string) or a plain single-line
+// text field with comma-separated values. Returns [] (not fabricated
+// content) for anything empty or unparseable.
+function parseMetafieldList(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.map(String).map((item) => item.trim()).filter(Boolean);
+  } catch {
+    // Not JSON - fall through to comma-split below.
+  }
+  return value.split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+// Performance metafields (longevity/projection/versatility) are expected
+// as a plain number 0-5 - clamped defensively rather than trusting
+// whatever a merchant typed. Returns null (section stays hidden) for
+// anything unset or non-numeric, never a guessed rating.
+function parseMetafieldRating(value) {
+  if (!value) return null;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  return Math.max(0, Math.min(5, num));
+}
+
 function truncate(text, max = 130) {
   const clean = (text || '').replace(/\s+/g, ' ').trim();
   if (!clean) return '';
@@ -130,9 +174,43 @@ export function mapShopifyProduct(node) {
     description: (node.description || '').trim(),
     image: images[0]?.url || '',
     imageAlt: images[0]?.altText || node.title,
-    images
+    images,
+    // Structural extension points for the Product Detail Page - each stays
+    // an empty array/null until the matching metafield is actually set in
+    // Shopify Admin (see PRODUCT_METAFIELD_KEYS below), never fabricated.
+    notes: {
+      top: parseMetafieldList(node.topNotes?.value),
+      heart: parseMetafieldList(node.heartNotes?.value),
+      base: parseMetafieldList(node.baseNotes?.value)
+    },
+    performance: {
+      longevity: parseMetafieldRating(node.longevity?.value),
+      projection: parseMetafieldRating(node.projection?.value),
+      versatility: parseMetafieldRating(node.versatility?.value)
+    },
+    occasions: parseMetafieldList(node.occasions?.value)
   };
 }
+
+// Reference for setting these up in Shopify Admin (Settings > Custom data
+// > Products > Add definition), so the Fragrance Pyramid/Performance/
+// Occasions sections on the Product Detail Page activate automatically
+// with zero further code changes once real values exist:
+//   custom.top_notes / custom.heart_notes / custom.base_notes
+//     - list of single-line text (or comma-separated single-line text)
+//   custom.longevity / custom.projection / custom.versatility
+//     - number (0-5)
+//   custom.occasions
+//     - list of single-line text (or comma-separated single-line text)
+export const PRODUCT_METAFIELD_KEYS = {
+  topNotes: 'custom.top_notes',
+  heartNotes: 'custom.heart_notes',
+  baseNotes: 'custom.base_notes',
+  longevity: 'custom.longevity',
+  projection: 'custom.projection',
+  versatility: 'custom.versatility',
+  occasions: 'custom.occasions'
+};
 
 export async function fetchProducts({ first = 24, sortKey = 'BEST_SELLING', reverse = false } = {}) {
   const data = await shopifyFetch(PRODUCTS_QUERY, { first, sortKey, reverse });

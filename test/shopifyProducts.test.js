@@ -95,6 +95,47 @@ test('mapShopifyProduct exposes vendorRaw separately from the store-name-coalesc
   assert.equal(withoutVendor.house, 'Aurelia Parfums', 'house still falls back to the store name for display purposes');
 });
 
+test('mapShopifyProduct leaves notes/performance/occasions empty when the metafields are unset, rather than guessing', () => {
+  const product = mapShopifyProduct(productNode());
+  assert.deepEqual(product.notes, { top: [], heart: [], base: [] });
+  assert.deepEqual(product.performance, { longevity: null, projection: null, versatility: null });
+  assert.deepEqual(product.occasions, []);
+});
+
+test('mapShopifyProduct parses fragrance notes from a JSON-array metafield value', () => {
+  const product = mapShopifyProduct(productNode({
+    topNotes: { value: '["Bergamot","Pink Pepper"]' },
+    heartNotes: { value: '["Iris","Violet"]' },
+    baseNotes: { value: '["Musk","Cedar"]' }
+  }));
+  assert.deepEqual(product.notes.top, ['Bergamot', 'Pink Pepper']);
+  assert.deepEqual(product.notes.heart, ['Iris', 'Violet']);
+  assert.deepEqual(product.notes.base, ['Musk', 'Cedar']);
+});
+
+test('mapShopifyProduct also parses notes/occasions from a plain comma-separated metafield value', () => {
+  const product = mapShopifyProduct(productNode({
+    topNotes: { value: 'Bergamot, Pink Pepper' },
+    occasions: { value: 'Office, Date Night' }
+  }));
+  assert.deepEqual(product.notes.top, ['Bergamot', 'Pink Pepper']);
+  assert.deepEqual(product.occasions, ['Office', 'Date Night']);
+});
+
+test('mapShopifyProduct parses performance ratings as clamped numbers, and drops non-numeric values', () => {
+  const rated = mapShopifyProduct(productNode({
+    longevity: { value: '4.5' },
+    projection: { value: '3' },
+    versatility: { value: '10' }
+  }));
+  assert.equal(rated.performance.longevity, 4.5);
+  assert.equal(rated.performance.projection, 3);
+  assert.equal(rated.performance.versatility, 5, 'clamped to the real 0-5 scale rather than showing an out-of-range number');
+
+  const garbage = mapShopifyProduct(productNode({ longevity: { value: 'high' } }));
+  assert.equal(garbage.performance.longevity, null, 'non-numeric metafield value -> section stays hidden, not a guessed rating');
+});
+
 test('deriveTone is a stable, deterministic decorative assignment (not a factual claim)', () => {
   const a = deriveTone('gid://shopify/Product/1001');
   const b = deriveTone('gid://shopify/Product/1001');

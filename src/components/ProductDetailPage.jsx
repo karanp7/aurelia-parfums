@@ -43,6 +43,28 @@ const TRUST_ITEMS = [
   'Secure Shopify Checkout'
 ];
 
+const NOTE_TIERS = [
+  { key: 'top', label: 'Top Notes' },
+  { key: 'heart', label: 'Heart Notes' },
+  { key: 'base', label: 'Base Notes' }
+];
+
+const PERFORMANCE_METRICS = [
+  { key: 'longevity', label: 'Longevity' },
+  { key: 'projection', label: 'Projection' },
+  { key: 'versatility', label: 'Versatility' }
+];
+
+function StarRating({ value }) {
+  return (
+    <span className="performance-stars" aria-label={`${value} out of 5`}>
+      {Array.from({ length: 5 }, (_, index) => (
+        <span key={index} aria-hidden="true" className={index < Math.round(value) ? 'filled' : ''}>★</span>
+      ))}
+    </span>
+  );
+}
+
 const WHY_BUY_ITEMS = [
   '100% Authentic Guarantee',
   'Free Shipping on Orders $100+',
@@ -206,6 +228,47 @@ export default function ProductDetailPage({
         </div>
       </div>
 
+      {(product.notes.top.length > 0 || product.notes.heart.length > 0 || product.notes.base.length > 0) && (
+        <section className="pyramid-section">
+          <div className="section-intro">
+            <p className="overline dark">Fragrance Pyramid</p>
+            <h2>How it unfolds.</h2>
+          </div>
+          <div className="note-pyramid">
+            {NOTE_TIERS.map(({ key, label }) => product.notes[key].length > 0 && (
+              <span key={key}>
+                <small>{label}</small>
+                {product.notes[key].join(', ')}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {(product.performance.longevity != null || product.performance.projection != null || product.performance.versatility != null || product.occasions.length > 0) && (
+        <section className="performance-section">
+          <div className="section-intro">
+            <p className="overline dark">Performance</p>
+            <h2>How it wears.</h2>
+          </div>
+          {(product.performance.longevity != null || product.performance.projection != null || product.performance.versatility != null) && (
+            <div className="performance-grid">
+              {PERFORMANCE_METRICS.map(({ key, label }) => product.performance[key] != null && (
+                <div key={key} className="performance-card">
+                  <span>{label}</span>
+                  <StarRating value={product.performance[key]} />
+                </div>
+              ))}
+            </div>
+          )}
+          {product.occasions.length > 0 && (
+            <div className="occasion-chips">
+              {product.occasions.map((occasion) => <span key={occasion} className="occasion-chip">{occasion}</span>)}
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="authenticity-section">
         <div className="section-intro">
           <p className="overline dark">Authenticity</p>
@@ -237,6 +300,20 @@ export default function ProductDetailPage({
             <div key={item} className="why-buy-item"><Icon>✓</Icon> {item}</div>
           ))}
         </div>
+      </section>
+
+      {/* Visible shell, unlike Testimonials/Instagram (which render nothing
+          when empty) - there is genuinely no reviews app connected to
+          Shopify yet, so this is an honest "nothing here yet" state rather
+          than fabricated stars/quotes. Sort controls (Highest/Newest/
+          Lowest) only make sense once there's real data to sort, so they
+          stay out until then instead of shipping dead UI. */}
+      <section className="reviews-section">
+        <div className="section-intro">
+          <p className="overline dark">Reviews</p>
+          <h2>Customer reviews.</h2>
+        </div>
+        <p className="reviews-empty">No reviews yet for this fragrance.</p>
       </section>
     </div>
   );
