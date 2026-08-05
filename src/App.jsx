@@ -27,6 +27,15 @@ const QuizModal = lazy(() => import('./components/QuizModal.jsx'));
 const DISCOVERY_SET_HANDLE = 'discovery-set';
 const GIFT_WRAP_HANDLE = 'gift-wrap';
 
+// Discovery Set's business model isn't finalized — every purchase entry
+// point (hero CTA, homepage section, quiz result, cart cross-sell) is gated
+// behind this single flag rather than deleted, so re-enabling later is one
+// line instead of reconstructing four separate UI call sites. The Shopify
+// cart-line/attribute plumbing for it (addDiscoverySet, shopifyCart.js)
+// stays fully intact either way. The Scent Finder quiz itself is unaffected —
+// it's the recommendation engine, not the disabled purchase mechanic.
+const DISCOVERY_COMMERCE_ENABLED = false;
+
 const Icon = ({ children }) => <span aria-hidden="true">{children}</span>;
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
 
@@ -123,6 +132,8 @@ function App() {
   const [giftMessage, setGiftMessage] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupDone, setSignupDone] = useState(false);
+  const [discoveryWaitlistEmail, setDiscoveryWaitlistEmail] = useState('');
+  const [discoveryWaitlistDone, setDiscoveryWaitlistDone] = useState(false);
   const [wishlist, setWishlist] = useState(() => readWishlist());
 
   const heroRef = useRef(null);
@@ -331,12 +342,22 @@ function App() {
     runCartMutation(() => setCartAttributes(cart.id, [{ key: 'Gift message', value: giftMessage }])).catch(() => {});
   };
 
+  // Discovery-set cross-sell only ever suggests a real bottle to follow up a
+  // *pre-existing* discovery-set cart line (e.g. one added before commerce
+  // for it was disabled). It deliberately never falls back to suggesting a
+  // fresh discovery-set purchase when DISCOVERY_COMMERCE_ENABLED is off —
+  // that fallback used to be the cart drawer's default state for any cart
+  // with no discovery line, which would have silently reintroduced the exact
+  // purchase path the four other entry points are being gated to remove.
   const crossSell = useMemo(() => {
     const discovery = cart?.lines.find((line) => line.type === 'discovery');
     if (discovery?.matches?.length) {
       return { type: 'bottle', product: crossSellProduct(products, discovery.matches, products[1]) };
     }
-    return { type: 'discovery', product: discoveryProduct };
+    if (DISCOVERY_COMMERCE_ENABLED) {
+      return { type: 'discovery', product: discoveryProduct };
+    }
+    return { type: null, product: null };
   }, [cart, products, discoveryProduct]);
 
   const focusSearch = () => {
@@ -423,19 +444,28 @@ function App() {
         <div className="section-intro"><p className="overline dark">The easier way to buy fragrance online</p><h2>Smell it in your life,<br/>not just on a screen.</h2></div>
         <div className="journey-grid">
           <article><span>01</span><h3>Tell us what you love</h3><p>Shop for yourself or a gift. Share the moods, notes and intensity that feel right.</p></article>
-          <article><span>02</span><h3>Try three at home</h3><p>Receive three 2 ml fragrances selected to create a useful, varied shortlist.</p></article>
-          <article><span>03</span><h3>Choose without pressure</h3><p>Wear each scent more than once. Apply the full {discoveryPriceLabel} set price toward your bottle within 45 days.</p></article>
+          <article><span>02</span><h3>Get matched instantly</h3><p>The Scent Finder recommends real fragrances from the shop based on your answers.</p></article>
+          <article><span>03</span><h3>Shop with confidence</h3><p>Every recommendation links straight to a genuine, authentic bottle you can buy today.</p></article>
         </div>
       </section>
 
       <section className="discovery-feature" data-reveal>
         <div className="discovery-art" aria-hidden="true"><div className="set-box"><span>AURELIA</span><small>PERSONAL DISCOVERY SET</small></div><div className="vial-row"><i/><i/><i/></div></div>
         <div className="discovery-copy">
-          <p className="overline">Your personal discovery set</p>
+          <p className="overline">Coming soon</p>
           <h2>Three considered matches.<br/>One confident decision.</h2>
-          <p>Each set includes three 2 ml sprays—enough to wear each fragrance several times in different settings.</p>
-          <ul><li>Personalized from your quiz results</li><li>{discoveryPriceLabel} credit toward an eligible full bottle</li><li>Credit delivered by email and valid for 45 days</li><li>Discovery sets are final sale; damaged items are replaced</li></ul>
-          <div className="price-action"><strong>{discoveryPriceLabel}</strong><Button onClick={() => setQuizOpen(true)}>Build my set <Icon>↗</Icon></Button></div>
+          <p>Sample sets are on the way — three 2 ml sprays so you can try a fragrance at home before committing to a full bottle.</p>
+          {DISCOVERY_COMMERCE_ENABLED ? (
+            <div className="price-action"><strong>{discoveryPriceLabel}</strong><Button onClick={() => setQuizOpen(true)}>Build my set <Icon>↗</Icon></Button></div>
+          ) : (
+            <form className="waitlist-form" onSubmit={(event) => { event.preventDefault(); if (!discoveryWaitlistEmail.trim()) return; setDiscoveryWaitlistDone(true); setDiscoveryWaitlistEmail(''); }}>
+              <label htmlFor="discovery-waitlist-email">Be first to know when it launches</label>
+              {discoveryWaitlistDone ? <p className="waitlist-done">Thanks — we'll let you know.</p> : <div className="signup-row">
+                <input id="discovery-waitlist-email" type="email" required value={discoveryWaitlistEmail} onChange={(event) => setDiscoveryWaitlistEmail(event.target.value)} placeholder="you@email.com"/>
+                <Button variant="secondary" type="submit">Notify me</Button>
+              </div>}
+            </form>
+          )}
         </div>
       </section>
 
@@ -517,11 +547,13 @@ function App() {
         quizAnswers={quizAnswers}
         quizMatches={quizMatches}
         familyOptions={familyOptions}
+        discoveryEnabled={DISCOVERY_COMMERCE_ENABLED}
         discoveryPrice={discoveryProduct?.price ?? null}
         onAnswer={answerQuiz}
         onClose={closeQuiz}
         onRetake={retakeQuiz}
         onAddSet={() => { addDiscoverySet(quizMatches); closeQuiz(); }}
+        onSelectProduct={(product) => { closeQuiz(); openProduct(product); }}
         dialogRef={quizDialogRef}
       />
     </Suspense>}
