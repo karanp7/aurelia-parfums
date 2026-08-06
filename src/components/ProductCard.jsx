@@ -22,18 +22,19 @@ const FREE_SHIPPING_THRESHOLD = 100;
 //
 // This is THE single product card used everywhere a product tile renders
 // (homepage Best Sellers, the Collection grid, the Scent Finder quiz
-// results, and the product modal's related-products rail) — `size="rail"`
-// trims padding/image height for the horizontal-scroll contexts, and
-// `eyebrow` adds an optional small label above the image (e.g. the quiz's
-// "Strongest match") without changing anything else about the card.
+// results, and the product modal's related-products/recently-viewed rails)
+// — every instance renders the identical design regardless of `size`.
+// `size="rail"` only adjusts the card's own width/layout for the
+// horizontal-scroll contexts (it sits in a flex row instead of a grid,
+// so it needs a bounded width instead of filling a grid column) — it
+// never changes which features render. `eyebrow` adds an optional small
+// label above the image (e.g. the quiz's "Strongest match").
 export default function ProductCard({ product, mutating, wishlisted, onToggleWishlist, onOpen, onQuickAdd, size = 'grid', eyebrow = null }) {
   const prefersReducedMotion = useReducedMotion();
   const [pickerOpen, setPickerOpen] = useState(false);
   const savingsAmount = product.compareAtPrice ? product.compareAtPrice - product.price : null;
   const savingsPercent = savingsAmount ? Math.round((savingsAmount / product.compareAtPrice) * 100) : null;
-  const tapAnimation = prefersReducedMotion ? {} : { whileTap: { scale: 0.96 } };
   const inStockSizes = product.sizes.filter((s) => s.availableForSale);
-  const isGrid = size === 'grid';
 
   // Real, not invented: sizes[0] is the exact variant `product.price` above
   // already comes from (see mapShopifyProduct), so the label shown here
@@ -60,20 +61,17 @@ export default function ProductCard({ product, mutating, wishlisted, onToggleWis
             {product.price >= FREE_SHIPPING_THRESHOLD && <Badge tone="shipping">Free Shipping</Badge>}
           </div>
           <div className="bottle-wrap"><PerfumeBottle tone={product.tone} compact image={product.image} alt={product.imageAlt || product.name} /></div>
-          {!isGrid && <span className="view-hint">Explore fragrance</span>}
         </button>
-        {isGrid && (
-          <button
-            type="button"
-            className="quick-add-pill"
-            disabled={!product.availableForSale || mutating}
-            aria-expanded={inStockSizes.length > 1 ? pickerOpen : undefined}
-            aria-label={`Quick add ${product.name} to bag`}
-            onClick={handleQuickAdd}
-          >
-            Quick add
-          </button>
-        )}
+        <button
+          type="button"
+          className="quick-add-pill"
+          disabled={!product.availableForSale || mutating}
+          aria-expanded={inStockSizes.length > 1 ? pickerOpen : undefined}
+          aria-label={`Quick add ${product.name} to bag`}
+          onClick={handleQuickAdd}
+        >
+          Quick add
+        </button>
       </div>
 
       <motion.button
@@ -90,9 +88,7 @@ export default function ProductCard({ product, mutating, wishlisted, onToggleWis
       <div className="product-info">
         <p>{product.house}</p>
         <h3>{product.name}</h3>
-        {isGrid
-          ? (sizeLine && <span className="product-size-line">{sizeLine}</span>)
-          : <span>{product.summary}</span>}
+        {sizeLine && <span className="product-size-line">{sizeLine}</span>}
         <div>
           {/* No rating/review stars here by design: this store has no real
               rating data source anywhere, and inventing one would violate
@@ -104,15 +100,9 @@ export default function ProductCard({ product, mutating, wishlisted, onToggleWis
                 <strong>From {money(product.price)}</strong>
                 {product.compareAtPrice && <s className="compare-price">{money(product.compareAtPrice)}</s>}
               </span>
-              {product.compareAtPrice && <span className={isGrid ? 'savings-badge' : 'savings-note'}>Save {money(savingsAmount)} ({savingsPercent}%)</span>}
+              {product.compareAtPrice && <span className="savings-badge">Save {money(savingsAmount)} ({savingsPercent}%)</span>}
             </> : <strong>Sold out</strong>}
           </div>
-          {!isGrid && (
-            <div className="product-actions">
-              <motion.button {...tapAnimation} disabled={!product.availableForSale || mutating} aria-expanded={inStockSizes.length > 1 ? pickerOpen : undefined} onClick={handleQuickAdd}>Quick add</motion.button>
-              <button onClick={() => onOpen(product)}>Choose size <Icon name="plus" size={12}/></button>
-            </div>
-          )}
           <AnimatePresence initial={false}>
             {pickerOpen && (
               <motion.div
