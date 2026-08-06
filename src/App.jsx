@@ -666,7 +666,6 @@ function App() {
       /> : <>
       <section className="hero-cinematic">
         <HeroMedia />
-        <div className="hero-scrim" aria-hidden="true" />
         <div className="hero-copy">
           <p className="overline">Find your signature</p>
           <h1>Authentic Luxury Fragrances.<br/><em>Better Prices.</em></h1>
@@ -700,7 +699,7 @@ function App() {
         </div>}
       </section>
 
-      <section id="discovery" className="discovery-story" data-reveal>
+      <section id="discovery" className="discovery-story soft-light" data-reveal>
         <div className="section-intro"><p className="overline dark">The easier way to buy fragrance online</p><h2>Smell it in your life,<br/>not just on a screen.</h2></div>
         <div className="journey-grid">
           <article><span>01</span><h3>Tell us what you love</h3><p>Shop for yourself or a gift. Share the moods, notes and intensity that feel right.</p></article>

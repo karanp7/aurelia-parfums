@@ -17,7 +17,9 @@ const FREE_SHIPPING_THRESHOLD = 100;
 // for free — duplicating that in Framer Motion risks two engines fighting
 // over the same transform. Framer Motion is used here only for genuinely new
 // interactions CSS :hover can't express as naturally: press feedback on
-// Quick Add, a spring "pop" on the wishlist toggle, and (below) the inline
+// Quick Add, a restrained scale pulse on the wishlist toggle (Phase 6:
+// toned down from an earlier 1.3 scale - "luxury moves slowly", not a
+// bouncy like-button pop), and (below) the inline
 // multi-size picker's expand/collapse.
 //
 // This is THE single product card used everywhere a product tile renders
@@ -79,7 +81,7 @@ export default function ProductCard({ product, mutating, wishlisted, onToggleWis
         aria-label={wishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
         aria-pressed={wishlisted}
         onClick={() => onToggleWishlist(product.id)}
-        animate={prefersReducedMotion ? undefined : { scale: wishlisted ? [1, 1.3, 1] : 1 }}
+        animate={prefersReducedMotion ? undefined : { scale: wishlisted ? [1, 1.12, 1] : 1 }}
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       >
         <Icon name="heart" filled={wishlisted} size={16}/>

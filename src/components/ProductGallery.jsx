@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import PerfumeBottle from './PerfumeBottle.jsx';
+import EditorialImage from './EditorialImage.jsx';
 
 // Large hero + vertical thumbnail rail, built from the real Shopify
 // `images[]` array (up to 5, already fetched — previously only images[0]
@@ -41,7 +42,7 @@ export default function ProductGallery({ product }) {
               className={index === activeIndex ? 'active' : ''}
               onClick={() => setActiveIndex(index)}
             >
-              <img src={image.url} alt={image.altText || `${product.name} view ${index + 1}`} loading="lazy" />
+              <EditorialImage src={image.url} alt={image.altText || `${product.name} view ${index + 1}`} loading="lazy" />
             </button>
           ))}
         </div>

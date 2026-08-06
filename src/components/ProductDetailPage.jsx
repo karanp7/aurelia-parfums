@@ -173,7 +173,7 @@ export default function ProductDetailPage({
                   aria-label={wishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
                   aria-pressed={wishlisted}
                   onClick={() => toggleWishlist(product.id)}
-                  animate={prefersReducedMotion ? undefined : { scale: wishlisted ? [1, 1.3, 1] : 1 }}
+                  animate={prefersReducedMotion ? undefined : { scale: wishlisted ? [1, 1.12, 1] : 1 }}
                   transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <Icon name="heart" filled={wishlisted} size={18}/>
