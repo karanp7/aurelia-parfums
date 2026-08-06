@@ -1,35 +1,42 @@
-import React from 'react';
-import PerfumeBottle from './PerfumeBottle.jsx';
+import React, { useState } from 'react';
 
-// The hero's visual "stage" — separated from the hero section's copy/layout
-// so it can hold a real product photo today and swap in real campaign
-// photography or video later without touching App.jsx's hero markup.
-//
-// Deliberately does NOT fabricate a photorealistic scene with CSS (no fake
-// rocks/water/lighting drawn from shapes) — the brief is explicit that
-// faking luxury with CSS is worse than admitting a real campaign photo
-// isn't shot yet. What CSS *can* honestly do to a real photo is apply
-// actual art direction: a directional light scrim, a grounded contact
-// shadow, a vignette — the same treatment a photographer/retoucher would
-// apply, not an invented backdrop. When no real product image exists yet,
-// this falls back to the same decorative bottle-scene used everywhere else
-// on the site (PerfumeBottle's own fallback), never a fabricated photo.
-export default function HeroMedia({ product, tone = 'rose', video = null, className = '' }) {
+// Campaign media contract for the hero. Real desktop/tablet/mobile
+// photography (and, optionally, a video) go here once they're shot — see
+// public/images/campaigns/README.md for exact dimensions and crop-safe
+// areas. None of that exists yet, so every path below points at a file
+// that isn't there, and the component is built to fail gracefully when
+// that's true: no broken-image icon, no letterboxed white rectangle,
+// just a neutral dark backdrop (the same tone the real photography's own
+// left-hand "dark, uncluttered" zone is briefed to have) until a real
+// asset lands. This deliberately does not fabricate a photorealistic
+// scene or float a studio product shot on top of it — see the removed
+// PerfumeBottle usage this replaced.
+const DEFAULT_ASSETS = {
+  desktop: '/images/campaigns/hero-desktop-placeholder.jpg',
+  tablet: '/images/campaigns/hero-tablet-placeholder.jpg',
+  mobile: '/images/campaigns/hero-mobile-placeholder.jpg'
+};
+
+export default function HeroMedia({
+  desktopImage = DEFAULT_ASSETS.desktop,
+  tabletImage = DEFAULT_ASSETS.tablet,
+  mobileImage = DEFAULT_ASSETS.mobile,
+  video = null,
+  className = ''
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+
   return (
     <div className={`hero-media ${className}`.trim()} aria-hidden="true">
-      <div className="hero-media-light" />
       {video ? (
         <video className="hero-media-video" src={video} autoPlay muted loop playsInline />
-      ) : (
-        <div className="hero-media-frame">
-          <PerfumeBottle
-            tone={product?.tone || tone}
-            image={product?.image}
-            alt={product?.imageAlt || product?.name || 'Perfume bottle'}
-          />
-        </div>
-      )}
-      <div className="hero-media-ground" />
+      ) : !imageFailed ? (
+        <picture className="hero-media-picture">
+          <source media="(max-width:640px)" srcSet={mobileImage} />
+          <source media="(max-width:1024px)" srcSet={tabletImage} />
+          <img className="hero-media-image" src={desktopImage} alt="" onError={() => setImageFailed(true)} />
+        </picture>
+      ) : null}
     </div>
   );
 }

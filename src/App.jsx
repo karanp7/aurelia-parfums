@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'rea
 import { useNavigate, useLocation, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import HeroMedia from './components/HeroMedia.jsx';
+import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
 import Dialog, { DialogClose } from './components/Dialog.jsx';
 import LoadingSkeleton, { CollectionHeaderSkeleton, FilterBarSkeleton } from './components/LoadingSkeleton.jsx';
@@ -218,7 +219,6 @@ function App() {
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  const heroRef = useRef(null);
   const searchInputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -267,15 +267,6 @@ function App() {
       .finally(() => { if (!cancelled) setCartLoading(false); });
 
     return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => {
-      if (heroRef.current) heroRef.current.style.setProperty('--scroll', `${Math.min(window.scrollY, 650)}px`);
-    };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   // H-05: product detail is driven by the route (/products/:handle) rather
@@ -400,14 +391,6 @@ function App() {
   useEffect(() => { setVisibleCount(12); }, [family, search, brand, priceBucket, availabilityOnly, sizeFilter, sort, wishlistFilterOn]);
 
   const quizMatches = useMemo(() => rankMatches(products, quizAnswers, 3), [products, quizAnswers]);
-
-  // Sorted by real Shopify sales (sortKey: BEST_SELLING in shopifyProducts.js)
-  // — products[0] is an honest bestseller signal, not a guess. An explicit
-  // "Bestseller" tag (if a merchant sets one) always wins over that signal.
-  const heroProduct = useMemo(
-    () => products.find((product) => product.badge === 'Bestseller') || products[0] || null,
-    [products]
-  );
 
   const relatedProducts = useMemo(() => {
     if (!activeProduct) return [];
@@ -621,7 +604,7 @@ function App() {
 
   if (!isShopifyConfigured) {
     return <div className="site-shell">
-      <header className="nav"><a className="logo" href="#top">AURELIA <span>PARFUMS</span></a></header>
+      <header className="nav"><Logo/></header>
       <main id="top" className="setup-notice">
         <p className="overline dark">Setup needed</p>
         <h1 className="display">Connect Shopify to go live.</h1>
@@ -639,7 +622,7 @@ function App() {
     </div>
     <header className="nav">
       <button className="nav-icon" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Icon name="menu"/></button>
-      <a className="logo" href="#top">AURELIA <span>PARFUMS</span></a>
+      <Logo/>
       <nav aria-label="Primary">
         <ShopDropdown
           open={shopMenuOpen}
@@ -681,8 +664,9 @@ function App() {
         toggleWishlist={toggleWishlist}
         openProduct={openProduct}
       /> : <>
-      <section ref={heroRef} className="hero-cinematic">
-        <div className="hero-light" aria-hidden="true" />
+      <section className="hero-cinematic">
+        <HeroMedia />
+        <div className="hero-scrim" aria-hidden="true" />
         <div className="hero-copy">
           <p className="overline">Find your signature</p>
           <h1>Authentic Luxury Fragrances.<br/><em>Better Prices.</em></h1>
@@ -691,9 +675,6 @@ function App() {
             <Button variant="secondary" className="btn-gold" onClick={() => setQuizOpen(true)}>Find your scent <Icon name="arrowUpRight"/></Button>
             <Button variant="ghost" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}>Shop best sellers</Button>
           </div>
-        </div>
-        <div className="hero-stage">
-          <HeroMedia product={heroProduct} />
         </div>
       </section>
 
@@ -883,7 +864,7 @@ function App() {
     </main>
 
     <footer className="site-footer">
-      <div><a className="logo footer-logo" href="#top">AURELIA <span>PARFUMS</span></a><h2>Choose slowly.<br/><em>Wear confidently.</em></h2></div>
+      <div><Logo className="footer-logo"/><h2>Choose slowly.<br/><em>Wear confidently.</em></h2></div>
       <div className="footer-links"><a href="#discovery">Discovery sets</a><a href="#collection">Full bottles</a><a href="#gifts">Gifts</a><button onClick={() => setQuizOpen(true)}>Scent finder</button><a href="#policies">Shipping &amp; returns</a></div>
       <form className="footer-signup" onSubmit={(event) => { event.preventDefault(); if (!signupEmail.trim()) return; setSignupDone(true); setSignupEmail(''); }}>
         <label htmlFor="footer-email">Exclusive launches, private offers and personalized recommendations</label>
