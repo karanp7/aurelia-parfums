@@ -39,7 +39,44 @@ const ICONS = {
   chevronDown: () => <path d="M5 8l5 5 5-5" />,
   close: () => <path d="M5 5l10 10M15 5L5 15" />,
   minus: () => <path d="M4 10h12" />,
-  plus: () => <path d="M10 4v12M4 10h12" />
+  plus: () => <path d="M10 4v12M4 10h12" />,
+  shield: () => (
+    <>
+      <path d="M10 2.2l6.5 2.4v5c0 4.3-2.8 7.6-6.5 8.6-3.7-1-6.5-4.3-6.5-8.6v-5L10 2.2z" />
+      <path d="M7.2 10l2 2 3.6-3.8" />
+    </>
+  ),
+  truck: () => (
+    <>
+      <rect x="1.5" y="5.5" width="10.5" height="8.5" />
+      <path d="M12 8.5h3l2.5 2.5v3H12z" />
+      <circle cx="5.5" cy="16" r="1.6" />
+      <circle cx="14.2" cy="16" r="1.6" />
+    </>
+  ),
+  gift: () => (
+    <>
+      <rect x="2.5" y="8" width="15" height="9.5" />
+      <path d="M1.5 5h17v3.5h-17z" />
+      <path d="M10 5v12.5" />
+      <path d="M10 5S7.8 1.2 5.6 1.5C4 1.7 3.6 3.6 5 4.4c1 .6 3.4.6 5 .6z" />
+      <path d="M10 5s2.2-3.8 4.4-3.5c1.6.2 2 2.1.6 2.9-1 .6-3.4.6-5 .6z" />
+    </>
+  ),
+  refresh: () => (
+    <>
+      <path d="M2.5 10a7.5 7.5 0 0112.9-5.2L17 6.4" />
+      <path d="M17 2.5v4h-4" />
+      <path d="M17.5 10a7.5 7.5 0 01-12.9 5.2L3 13.6" />
+      <path d="M3 17.5v-4h4" />
+    </>
+  ),
+  user: () => (
+    <>
+      <circle cx="10" cy="6.8" r="3.5" />
+      <path d="M3.2 17.5c0-3.7 3-6.7 6.8-6.7s6.8 3 6.8 6.7" />
+    </>
+  )
 };
 
 export default function Icon({ name, filled = false, size = 18, className = '', ...rest }) {

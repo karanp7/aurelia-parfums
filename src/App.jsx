@@ -206,7 +206,6 @@ function App() {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [selectedSize, setSelectedSize] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [navSolid, setNavSolid] = useState(false);
   const [giftMessage, setGiftMessage] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupDone, setSignupDone] = useState(false);
@@ -272,7 +271,6 @@ function App() {
 
   useEffect(() => {
     const onScroll = () => {
-      setNavSolid(window.scrollY > 24);
       if (heroRef.current) heroRef.current.style.setProperty('--scroll', `${Math.min(window.scrollY, 650)}px`);
     };
     onScroll();
@@ -623,7 +621,7 @@ function App() {
 
   if (!isShopifyConfigured) {
     return <div className="site-shell">
-      <header className="nav nav-solid"><a className="logo" href="#top">AURELIA <span>PARFUMS</span></a></header>
+      <header className="nav"><a className="logo" href="#top">AURELIA <span>PARFUMS</span></a></header>
       <main id="top" className="setup-notice">
         <p className="overline dark">Setup needed</p>
         <h1 className="display">Connect Shopify to go live.</h1>
@@ -635,11 +633,11 @@ function App() {
   return <div className="site-shell">
     <a className="skip-link" href="#top">Skip to content</a>
     <div className="announcement-bar">
-      <span>100% Authentic Guarantee</span>
-      <span>Free Shipping on Orders $100+</span>
-      <span>30-Day Easy Returns</span>
+      <span><Icon name="shield" size={13}/>100% Authentic Guarantee</span>
+      <span><Icon name="truck" size={13}/>Free Shipping on Orders $100+</span>
+      <span><Icon name="refresh" size={13}/>Easy Returns Within 30 Days</span>
     </div>
-    <header className={`nav ${navSolid ? 'nav-solid' : ''}`}>
+    <header className="nav">
       <button className="nav-icon" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Icon name="menu"/></button>
       <a className="logo" href="#top">AURELIA <span>PARFUMS</span></a>
       <nav aria-label="Primary">
@@ -663,7 +661,7 @@ function App() {
           aria-pressed={wishlistFilterOn}
           onClick={() => { setWishlistFilterOn((on) => !on); document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' }); }}
         ><Icon name="heart" filled={wishlistFilterOn}/></button>
-        <button className="bag" onClick={() => setCartOpen(true)} aria-label={`Open bag with ${itemCount} items`}><Icon name="bag"/><span>Bag</span>{itemCount > 0 && <b>{itemCount}</b>}</button>
+        <button className="bag" onClick={() => setCartOpen(true)} aria-label={`Open bag with ${itemCount} items`}><Icon name="bag"/>{itemCount > 0 && <b>{itemCount}</b>}</button>
       </div>
     </header>
 
@@ -687,13 +685,12 @@ function App() {
         <div className="hero-light" aria-hidden="true" />
         <div className="hero-copy">
           <p className="overline">Find your signature</p>
-          <h1>Authentic luxury fragrances.<br/><em>Better prices.</em></h1>
-          <p className="lede">100% genuine designer fragrances, yours to experience — take a two-minute scent quiz for a personalized match, or shop the best sellers directly.</p>
+          <h1>Authentic Luxury Fragrances.<br/><em>Better Prices.</em></h1>
+          <p className="lede">100% genuine designer fragrances. Yours to experience.</p>
           <div className="hero-buttons">
-            <Button variant="secondary" onClick={() => setQuizOpen(true)}>Find your scent <Icon name="arrowUpRight"/></Button>
+            <Button variant="secondary" className="btn-gold" onClick={() => setQuizOpen(true)}>Find your scent <Icon name="arrowUpRight"/></Button>
             <Button variant="ghost" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}>Shop best sellers</Button>
           </div>
-          <p className="hero-proof">100% Authentic · Ground shipping within the contiguous U.S.</p>
         </div>
         <div className="hero-stage">
           <HeroMedia product={heroProduct} />
@@ -701,10 +698,10 @@ function App() {
       </section>
 
       <section className="trust-row" aria-label="Store commitments">
-        <div><Icon name="check" size={14}/><strong>100% Authentic Guarantee</strong><span>Sourced through trusted, authorized channels</span></div>
-        <div><Icon name="check" size={14}/><strong>Free Shipping on Orders $100+</strong><span>Fast, fragrance-safe ground shipping within the U.S.</span></div>
-        <div><Icon name="check" size={14}/><strong>Luxury Gift Packaging</strong><span>Optional gift wrap at checkout</span></div>
-        <div><Icon name="check" size={14}/><strong>30-Day Easy Returns</strong><span>Unopened bottles, no questions asked</span></div>
+        <div><Icon name="shield" size={34}/><strong>100% Authentic</strong><span>We source directly from authorized distributors</span></div>
+        <div><Icon name="truck" size={34}/><strong>Free Shipping</strong><span>On orders $100+ within the U.S.</span></div>
+        <div><Icon name="gift" size={34}/><strong>Luxury Gift Packaging</strong><span>Optional gift wrap at checkout</span></div>
+        <div><Icon name="refresh" size={34}/><strong>Easy Returns</strong><span>30-day returns on unopened items</span></div>
       </section>
 
       <section id="best-sellers" className="bestsellers-section" data-reveal>
