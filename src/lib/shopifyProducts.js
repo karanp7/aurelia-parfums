@@ -129,6 +129,20 @@ function truncate(text, max = 130) {
   return `${clean.slice(0, max).replace(/\s+\S*$/, '')}…`;
 }
 
+// Real, not guessed: only returns a value if a merchant has actually
+// configured a variant option literally named "Concentration" (e.g. "Eau
+// de Parfum" vs "Eau de Toilette") — most stores won't have this set up,
+// so callers simply omit it rather than inferring it from a size label or
+// product title. Shared by the Product Detail Page and ProductCard so both
+// apply the identical honesty rule instead of each guessing independently.
+export function findConcentration(product) {
+  for (const size of product.sizes) {
+    const match = (size.selectedOptions || []).find((option) => /concentration/i.test(option.name));
+    if (match?.value) return match.value;
+  }
+  return null;
+}
+
 export function mapShopifyProduct(node) {
   const images = node.images?.nodes || [];
   const tags = node.tags || [];

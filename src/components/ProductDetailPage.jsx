@@ -5,24 +5,13 @@ import ProductCard from './ProductCard.jsx';
 import ProductGallery from './ProductGallery.jsx';
 import Icon from './Icon.jsx';
 import { useStickyOnScroll } from '../hooks/useStickyOnScroll.js';
+import { findConcentration } from '../lib/shopifyProducts.js';
 
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
 
 // Same $100 threshold already used sitewide (announcement bar, trust row,
 // ProductCard's own Free Shipping badge) — never a separate invented number.
 const FREE_SHIPPING_THRESHOLD = 100;
-
-// Real, not guessed: only shown if a merchant has actually configured a
-// variant option literally named "Concentration" (e.g. "Eau de Parfum" vs
-// "Eau de Toilette") — most stores won't have this set up, so it's simply
-// omitted rather than inferring it from a size label or product title.
-function findConcentration(product) {
-  for (const size of product.sizes) {
-    const match = (size.selectedOptions || []).find((option) => /concentration/i.test(option.name));
-    if (match?.value) return match.value;
-  }
-  return null;
-}
 
 // Sticky offset for the purchase box: same fixed announcement-bar (36px) +
 // nav (74px) stack as the Collection page's filter bar, plus a little extra
