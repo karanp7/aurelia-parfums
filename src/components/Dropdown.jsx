@@ -24,8 +24,14 @@ export default function Dropdown({ label, options, value, onChange, className = 
     };
   }, [open]);
 
+  // "All"/"all" is every filter's real default value across the app - a
+  // single generic check here instead of each call site passing its own
+  // isActive flag. Drives the chip's filled/active styling so an applied
+  // filter reads as visually "on", not just as differently-labeled text.
+  const isActive = !disabled && value !== 'All' && value !== 'all';
+
   return (
-    <div className={`filter-dropdown${disabled ? ' filter-dropdown--disabled' : ''} ${className}`} ref={ref}>
+    <div className={`filter-dropdown${disabled ? ' filter-dropdown--disabled' : ''}${isActive ? ' filter-dropdown--active' : ''} ${className}`} ref={ref}>
       <button type="button" disabled={disabled} title={disabled ? 'Coming soon' : undefined} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <span className="filter-dropdown-label">{label}</span>
         <span>{disabled ? 'Coming soon' : current?.label ?? 'All'}</span>

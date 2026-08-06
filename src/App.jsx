@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
-import { useNavigate, useLocation, matchPath } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import HeroMedia from './components/HeroMedia.jsx';
 import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
 import Dialog, { DialogClose } from './components/Dialog.jsx';
 import LoadingSkeleton, { CollectionHeaderSkeleton, FilterBarSkeleton } from './components/LoadingSkeleton.jsx';
+import CollectionBanner from './components/CollectionBanner.jsx';
 import EmptyState from './components/EmptyState.jsx';
 import ProductCard from './components/ProductCard.jsx';
 import ProductDetailPage from './components/ProductDetailPage.jsx';
@@ -13,7 +14,7 @@ import Icon from './components/Icon.jsx';
 import FilterBar, { PRICE_BUCKETS } from './components/FilterBar.jsx';
 import FilterDrawer from './components/FilterDrawer.jsx';
 import { isShopifyConfigured } from './lib/shopify.js';
-import { fetchProducts, fetchProductByHandle } from './lib/shopifyProducts.js';
+import { fetchProducts, fetchProductByHandle, findConcentration } from './lib/shopifyProducts.js';
 import {
   getOrCreateCart, addCartLine, updateCartLineQuantity, removeCartLine, setCartAttributes,
   LINE_TYPE_ATTRIBUTE_KEY, DISCOVERY_LINE_ATTRIBUTE_VALUE, GIFT_WRAP_LINE_ATTRIBUTE_VALUE, MATCHES_ATTRIBUTE_KEY
@@ -78,6 +79,13 @@ const MOOD_TILES = [
 // Brands) so useReveal's one-time querySelectorAll finds it.
 const testimonials = [];
 const instagramPosts = [];
+// Same reasoning: no real Shopify Collection resource is queried
+// anywhere in this app (the Collection page filters the full product
+// list client-side), so there's no live seasonal/designer-spotlight
+// content to show yet. CollectionBanner itself renders nothing when this
+// is null - see that component for the real data shape once a Collection
+// query exists.
+const collectionBanner = null;
 
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
 
@@ -180,14 +188,50 @@ function ShopDropdown({ open, onToggle, onClose, onShopNew }) {
   );
 }
 
+// Collection filters live in the URL (?family=Woody&occasion=Evening&...)
+// so a filtered view is bookmarkable/shareable and survives a refresh -
+// read once on mount, not on every render, since the filter state itself
+// (not the URL) stays the source of truth while the page is open. Falls
+// back to each filter's existing default when a param is absent/invalid.
+function readFilterParams(search) {
+  const params = new URLSearchParams(search);
+  return {
+    family: params.get('family') || 'All',
+    search: params.get('q') || '',
+    sort: params.get('sort') || 'best-selling',
+    brand: params.get('brand') || 'All',
+    priceBucket: params.get('price') || 'all',
+    availabilityOnly: params.get('stock') === '1',
+    sizeFilter: params.get('size') || 'All',
+    occasion: params.get('occasion') || 'All',
+    concentration: params.get('concentration') || 'All',
+    newArrivalOnly: params.get('new') === '1',
+    bestSellerOnly: params.get('bestseller') === '1'
+  };
+}
+
 function App() {
-  const [family, setFamily] = useState('All');
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState('best-selling');
-  const [brand, setBrand] = useState('All');
-  const [priceBucket, setPriceBucket] = useState('all');
-  const [availabilityOnly, setAvailabilityOnly] = useState(false);
-  const [sizeFilter, setSizeFilter] = useState('All');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialFilters = useRef(readFilterParams(searchParams.toString() ? `?${searchParams.toString()}` : '')).current;
+
+  const [family, setFamily] = useState(initialFilters.family);
+  const [search, setSearch] = useState(initialFilters.search);
+  const [sort, setSort] = useState(initialFilters.sort);
+  const [brand, setBrand] = useState(initialFilters.brand);
+  const [priceBucket, setPriceBucket] = useState(initialFilters.priceBucket);
+  const [availabilityOnly, setAvailabilityOnly] = useState(initialFilters.availabilityOnly);
+  const [sizeFilter, setSizeFilter] = useState(initialFilters.sizeFilter);
+  // Occasion/Concentration: real, metafield/variant-derived facets (same
+  // data the Product Detail Page already shows) - gracefully hidden by
+  // FilterBar/FilterDrawer whenever the catalog has no products with that
+  // data set, rather than shown as an empty, useless dropdown.
+  const [occasion, setOccasion] = useState(initialFilters.occasion);
+  const [concentration, setConcentration] = useState(initialFilters.concentration);
+  // New Arrival / Best Seller: the exact same tag-derived `badge` value
+  // already used for the real product-card badges, exposed as filter
+  // toggles instead of read-only chrome.
+  const [newArrivalOnly, setNewArrivalOnly] = useState(initialFilters.newArrivalOnly);
+  const [bestSellerOnly, setBestSellerOnly] = useState(initialFilters.bestSellerOnly);
 
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -345,6 +389,12 @@ function App() {
   // family above — never a fixed/guessed list.
   const brandOptions = useMemo(() => [...new Set(products.map((product) => product.house))].sort(), [products]);
   const sizeOptions = useMemo(() => [...new Set(products.flatMap((product) => product.sizes.map((size) => size.label)))], [products]);
+  // Occasion/Concentration options: empty whenever no product in the
+  // catalog has that metafield/variant-option set, which is the signal
+  // FilterBar/FilterDrawer use to hide the whole dropdown rather than
+  // show one with nothing real to select.
+  const occasionOptions = useMemo(() => [...new Set(products.flatMap((product) => product.occasions || []))].sort(), [products]);
+  const concentrationOptions = useMemo(() => [...new Set(products.map((product) => findConcentration(product)).filter(Boolean))].sort(), [products]);
 
   // Resolves stored ids against the live catalog (drops any id no longer
   // in `products` - e.g. a delisted product) rather than caching stale
@@ -369,26 +419,80 @@ function App() {
   // Real count of active filters (excludes search, which has its own
   // always-visible input) - shown as a badge on the mobile "Filters"
   // trigger so users know something is applied without opening the drawer.
-  const activeFilterCount = [family !== 'All', brand !== 'All', priceBucket !== 'all', availabilityOnly, sizeFilter !== 'All'].filter(Boolean).length;
+  const activeFilterCount = [
+    family !== 'All', brand !== 'All', priceBucket !== 'all', availabilityOnly, sizeFilter !== 'All',
+    occasion !== 'All', concentration !== 'All', newArrivalOnly, bestSellerOnly
+  ].filter(Boolean).length;
 
   const filtered = useMemo(() => products.filter((product) => {
-    const searchable = [product.name, product.house, product.family, product.summary, product.description, ...(product.tags || [])]
+    // Notes (top/heart/base) are real metafield data when a merchant has
+    // set them — including them here is the whole reason "vanilla"/"oud"/
+    // "rose" can match a product whose name/description never mentions
+    // the word. Falls through to name/house/etc. either way.
+    const noteWords = [...(product.notes?.top || []), ...(product.notes?.heart || []), ...(product.notes?.base || [])];
+    const searchable = [product.name, product.house, product.family, product.summary, product.description, ...(product.tags || []), ...noteWords]
       .join(' ')
       .toLowerCase();
     const matchesWishlist = !wishlistFilterOn || wishlist.includes(product.id);
     const matchesBrand = brand === 'All' || product.house === brand;
+    const matchesOccasion = occasion === 'All' || (product.occasions || []).includes(occasion);
+    const matchesConcentration = concentration === 'All' || findConcentration(product) === concentration;
+    const matchesNewArrival = !newArrivalOnly || product.badge === 'New';
+    const matchesBestSeller = !bestSellerOnly || product.badge === 'Bestseller';
     const matchesAvailability = !availabilityOnly || product.availableForSale;
     const matchesSize = sizeFilter === 'All' || product.sizes.some((size) => size.label === sizeFilter);
     const matchesPrice = PRICE_BUCKETS.find((bucket) => bucket.value === priceBucket)?.test(product.price) ?? true;
     return (family === 'All' || product.family === family)
       && searchable.includes(search.toLowerCase())
-      && matchesWishlist && matchesBrand && matchesAvailability && matchesSize && matchesPrice;
-  }), [products, family, search, wishlistFilterOn, wishlist, brand, availabilityOnly, sizeFilter, priceBucket]);
+      && matchesWishlist && matchesBrand && matchesAvailability && matchesSize && matchesPrice
+      && matchesOccasion && matchesConcentration && matchesNewArrival && matchesBestSeller;
+  }), [products, family, search, wishlistFilterOn, wishlist, brand, availabilityOnly, sizeFilter, priceBucket, occasion, concentration, newArrivalOnly, bestSellerOnly]);
+
+  // Live suggestions as you type, before pressing Enter - real matching
+  // products only (name/house/notes, the same fields the search itself
+  // matches against), never a fabricated "trending searches" list. Capped
+  // at 6 so the dropdown stays a quick scan, not a second product grid.
+  const searchSuggestions = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return [];
+    const matches = [];
+    for (const product of products) {
+      if (matches.length >= 6) break;
+      const noteWords = [...(product.notes?.top || []), ...(product.notes?.heart || []), ...(product.notes?.base || [])];
+      const hit = product.name.toLowerCase().includes(query)
+        || product.house.toLowerCase().includes(query)
+        || noteWords.some((note) => note.toLowerCase().includes(query));
+      if (hit) matches.push(product);
+    }
+    return matches;
+  }, [search, products]);
 
   // Reset pagination whenever the result set's composition changes, so
   // switching filters never leaves the grid stuck deep in a stale "show
   // more" state from a previous, larger result set.
-  useEffect(() => { setVisibleCount(12); }, [family, search, brand, priceBucket, availabilityOnly, sizeFilter, sort, wishlistFilterOn]);
+  useEffect(() => { setVisibleCount(12); }, [family, search, brand, priceBucket, availabilityOnly, sizeFilter, sort, wishlistFilterOn, occasion, concentration, newArrivalOnly, bestSellerOnly]);
+
+  // Keeps the URL in sync as filters change (replace, not push, so every
+  // keystroke/click doesn't spam browser history) - only defaults are
+  // omitted, so a URL with nothing applied stays a bare "/". Search stays
+  // out deliberately: syncing every keystroke would thrash history/URL on
+  // every character even with replace, and search isn't counted in
+  // activeFilterCount for the same reason.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (family !== 'All') params.set('family', family);
+    if (sort !== 'best-selling') params.set('sort', sort);
+    if (brand !== 'All') params.set('brand', brand);
+    if (priceBucket !== 'all') params.set('price', priceBucket);
+    if (availabilityOnly) params.set('stock', '1');
+    if (sizeFilter !== 'All') params.set('size', sizeFilter);
+    if (occasion !== 'All') params.set('occasion', occasion);
+    if (concentration !== 'All') params.set('concentration', concentration);
+    if (newArrivalOnly) params.set('new', '1');
+    if (bestSellerOnly) params.set('bestseller', '1');
+    setSearchParams(params, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [family, sort, brand, priceBucket, availabilityOnly, sizeFilter, occasion, concentration, newArrivalOnly, bestSellerOnly]);
 
   const quizMatches = useMemo(() => rankMatches(products, quizAnswers, 3), [products, quizAnswers]);
 
@@ -581,6 +685,7 @@ function App() {
   // (that would reset text the user can still see and is still typing in).
   const clearFilterFacets = () => {
     setFamily('All'); setBrand('All'); setPriceBucket('all'); setAvailabilityOnly(false); setSizeFilter('All');
+    setOccasion('All'); setConcentration('All'); setNewArrivalOnly(false); setBestSellerOnly(false);
   };
   const clearFilters = () => { setSearch(''); clearFilterFacets(); };
 
@@ -782,15 +887,21 @@ function App() {
             <span aria-current="page">{collectionHeading}</span>
           </nav>
           <div className="collection-head"><div><p className="overline dark">{family === 'All' ? 'Full bottles' : family}</p><h2>{collectionHeading}</h2></div><p>Discover authentic designer fragrances at exceptional prices.</p></div>
+          <CollectionBanner banner={collectionBanner} />
         </>}
         {firstLoad ? <FilterBarSkeleton /> : <FilterBar
           searchInputRef={searchInputRef}
           search={search} onSearchChange={setSearch}
+          searchSuggestions={searchSuggestions} onSelectSuggestion={openProduct}
           family={family} familyOptions={familyOptions} onFamilyChange={setFamily}
           brand={brand} brandOptions={brandOptions} onBrandChange={setBrand}
           priceBucket={priceBucket} onPriceBucketChange={setPriceBucket}
           availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
           sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
+          occasion={occasion} occasionOptions={occasionOptions} onOccasionChange={setOccasion}
+          concentration={concentration} concentrationOptions={concentrationOptions} onConcentrationChange={setConcentration}
+          newArrivalOnly={newArrivalOnly} onNewArrivalChange={setNewArrivalOnly}
+          bestSellerOnly={bestSellerOnly} onBestSellerChange={setBestSellerOnly}
           sort={sort} sortOptions={Object.entries(SORT_OPTIONS).map(([value, option]) => ({ value, label: option.label }))} onSortChange={setSort}
           activeFilterCount={activeFilterCount} onOpenFilters={() => setFilterDrawerOpen(true)}
         />}
@@ -802,6 +913,10 @@ function App() {
           priceBucket={priceBucket} onPriceBucketChange={setPriceBucket}
           availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
           sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
+          occasion={occasion} occasionOptions={occasionOptions} onOccasionChange={setOccasion}
+          concentration={concentration} concentrationOptions={concentrationOptions} onConcentrationChange={setConcentration}
+          newArrivalOnly={newArrivalOnly} onNewArrivalChange={setNewArrivalOnly}
+          bestSellerOnly={bestSellerOnly} onBestSellerChange={setBestSellerOnly}
           onClear={clearFilterFacets}
           resultCount={filtered.length}
         />}
@@ -830,7 +945,26 @@ function App() {
           title="No fragrances matched your filters."
           description="Try a different note, family or spelling."
           action={<Button variant="text" onClick={clearFilters}>Clear filters</Button>}
-        />}
+        >
+          {/* Real recovery path, not a dead end: the same best-sellers
+              data already shown on the homepage, never a fabricated
+              "you might also like" guess. */}
+          {bestSellers.length > 0 && <div className="no-results-recovery">
+            <p className="overline dark">Popular right now</p>
+            <div className="rail-row">
+              {bestSellers.map((product) => <ProductCard
+                key={product.id}
+                product={product}
+                size="rail"
+                mutating={mutating}
+                wishlisted={wishlist.includes(product.id)}
+                onToggleWishlist={toggleWishlist}
+                onOpen={openProduct}
+                onQuickAdd={addBottle}
+              />)}
+            </div>
+          </div>}
+        </EmptyState>}
         {recentlyViewedProducts.length > 0 && <div className="recently-viewed-rail">
           <p className="overline dark">Recently viewed</p>
           <div className="rail-row">

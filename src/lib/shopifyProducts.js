@@ -92,6 +92,7 @@ function deriveBadge(tags) {
   if (lower.includes('new')) return 'New';
   if (lower.includes('limited') || lower.includes('small batch')) return 'Small batch';
   if (lower.includes('exclusive')) return 'Exclusive';
+  if (lower.includes('editors-pick') || lower.includes("editor's pick") || lower.includes('editors pick')) return "Editor's Pick";
   return null;
 }
 
