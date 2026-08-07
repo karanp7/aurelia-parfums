@@ -141,8 +141,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 /* Collection now leads the homepage (H-07) - a real top offset instead
    of relying on whatever section used to sit above it, since the fixed
    announcement bar + nav (110px) would otherwise overlap its first
-   heading. */
-.collection-lead{padding-top:calc(var(--space-7) + 110px)}
+   heading. Overrides just the top of .collection's own padding:var(--space-7)
+   6vw - clearing the fixed header only needs the header's own height plus
+   a modest breathing margin, not the full section-to-section rhythm value
+   on top of it (that produced a much bigger gap than intended). */
+.collection-lead{padding-top:calc(110px + var(--space-4))}
 /* Part 5: optional editorial banner, styled like the existing gift-
    section/scentfinder-card two-column pattern rather than a new visual
    language - hidden entirely (CollectionBanner returns null) until a
@@ -469,7 +472,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
    common tablet-portrait width) rendering the full 3-column desktop nav inline and cramped.
    Raised the collapse threshold to 800px so 768px reliably gets the compact hamburger nav. */
 @media(max-width:800px){.nav{height:64px;padding:0 18px}.nav nav{display:none}.nav-icon{display:flex}.logo-text{font-size:17px}
-.trust-row{grid-template-columns:1fr 1fr}.trust-row div{padding:var(--space-4) 18px}.collection,.reviews,.authenticity-section,.pyramid-section,.performance-section,.reviews-section{padding:var(--space-6) 18px}.why-buy-section,.rail-section{padding:0 18px var(--space-5)}.performance-grid{grid-template-columns:1fr}.section-intro h2,.collection-head h2{font-size:clamp(38px,12vw,52px)}.why-buy-grid{grid-template-columns:1fr}.gift-section{border-radius:var(--radius-lg);margin:10px}.gift-copy{padding:55px 23px}.gift-copy h2{font-size:clamp(36px,11vw,50px)}.gift-box{transform:scale(.8)}.collection-head{grid-template-columns:1fr}.collection-lead{padding-top:calc(var(--space-6) + 100px)}.collection-banner{grid-template-columns:1fr;min-height:0}.collection-banner-media{min-height:220px}.collection-banner-copy{padding:var(--space-4) 24px}.filter-bar-primary{align-items:stretch;flex-wrap:wrap;gap:12px}.filter-bar-primary .family-tabs,.filter-bar-primary .discovery-chips,.filter-bar-facets{display:none}.filter-drawer-trigger{display:flex}
+.trust-row{grid-template-columns:1fr 1fr}.trust-row div{padding:var(--space-4) 18px}.collection,.reviews,.authenticity-section,.pyramid-section,.performance-section,.reviews-section{padding:var(--space-6) 18px}.why-buy-section,.rail-section{padding:0 18px var(--space-5)}.performance-grid{grid-template-columns:1fr}.section-intro h2,.collection-head h2{font-size:clamp(38px,12vw,52px)}.why-buy-grid{grid-template-columns:1fr}.gift-section{border-radius:var(--radius-lg);margin:10px}.gift-copy{padding:55px 23px}.gift-copy h2{font-size:clamp(36px,11vw,50px)}.gift-box{transform:scale(.8)}.collection-head{grid-template-columns:1fr}.collection-lead{padding-top:calc(100px + var(--space-4))}.collection-banner{grid-template-columns:1fr;min-height:0}.collection-banner-media{min-height:220px}.collection-banner-copy{padding:var(--space-4) 24px}.filter-bar-primary{align-items:stretch;flex-wrap:wrap;gap:12px}.filter-bar-primary .family-tabs,.filter-bar-primary .discovery-chips,.filter-bar-facets{display:none}.filter-drawer-trigger{display:flex}
 /* Part 13: mobile filters become a bottom sheet, not a right-side panel -
    overrides the desktop .overlay(center)/.filter-drawer(side, drawerIn)
    defaults just for this breakpoint. */

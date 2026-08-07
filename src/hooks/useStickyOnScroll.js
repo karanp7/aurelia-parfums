@@ -76,7 +76,20 @@ export function useStickyOnScroll(offset, containerRef) {
       const withinContainer = containerBottomRef.current == null || window.scrollY + offset + heightRef.current <= containerBottomRef.current;
       setPinned(pastTop && withinContainer);
     };
-    measure();
+    // Same guard as onScroll above, and for the same reason: this effect
+    // re-runs every time `pinned` changes (it's in the dependency array),
+    // including the instant `pinned` just became true. At that exact
+    // instant, `ref.current` is already `position:fixed` - re-measuring it
+    // here would read its fixed viewport position instead of its true
+    // document position, corrupting naturalTopRef. Usually this happened
+    // to self-cancel (the offset that made the fixed top() and the offset
+    // that made it pin were the same number), which is why it went
+    // unnoticed - until a rapid sequence of scroll/resize events (e.g. the
+    // entry gateway's auto-scroll landing right at the pin threshold)
+    // could catch it mid-transition and corrupt the value for real,
+    // pinning the bar over content whose top scroll position was still
+    // being resolved.
+    if (!pinned) measure();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
     onScroll();
