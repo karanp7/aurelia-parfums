@@ -165,7 +165,7 @@ function useDialogA11y(isOpen, onClose) {
 // click outside both close it, matching the spirit of useDialogA11y above
 // without the full focus-trap machinery a real modal needs (a dropdown menu
 // is dismissable, not modal).
-function ShopDropdown({ open, onToggle, onClose, onShopNew }) {
+function ShopDropdown({ open, onToggle, onClose, onShopNew, onGoToSection }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -184,10 +184,10 @@ function ShopDropdown({ open, onToggle, onClose, onShopNew }) {
     <div className="shop-dropdown" ref={ref}>
       <button aria-haspopup="true" aria-expanded={open} onClick={onToggle}>Shop <Icon name="chevronDown"/></button>
       {open && <div className="shop-dropdown-menu" role="menu">
-        <a role="menuitem" href="#collection" onClick={onClose}>All Fragrances</a>
-        <a role="menuitem" href="#best-sellers" onClick={onClose}>Best Sellers</a>
+        <a role="menuitem" href="#collection" onClick={(event) => { event.preventDefault(); onGoToSection('collection'); onClose(); }}>All Fragrances</a>
+        <a role="menuitem" href="#best-sellers" onClick={(event) => { event.preventDefault(); onGoToSection('best-sellers'); onClose(); }}>Best Sellers</a>
         <button role="menuitem" onClick={onShopNew}>New Arrivals</button>
-        <a role="menuitem" href="#gifts" onClick={onClose}>Gifts</a>
+        <a role="menuitem" href="#gifts" onClick={(event) => { event.preventDefault(); onGoToSection('gifts'); onClose(); }}>Gifts</a>
       </div>}
     </div>
   );
@@ -341,6 +341,35 @@ function App() {
 
   useEffect(() => {
     document.title = activeProduct ? `${activeProduct.name} — Aurelia Parfums` : 'Aurelia — Find your signature scent';
+  }, [activeProduct]);
+
+  // Every nav/footer/menu link that jumps to a homepage section (`#collection`,
+  // `#best-sellers`, etc.) assumes those sections are mounted - true on the
+  // homepage, but not on a product page, where they're swapped out entirely
+  // for ProductDetailPage and don't exist in the DOM. `document.getElementById`
+  // then returns null and the link silently does nothing. `goToSection`
+  // covers both cases: if a product page is open, it navigates home first and
+  // remembers the target in a ref; once the homepage sections remount, the
+  // effect below scrolls to it (deferred a frame so the freshly-mounted DOM
+  // has actually painted before `scrollIntoView` measures it).
+  const pendingScrollRef = useRef(null);
+  const goToSection = (id, options) => {
+    if (activeProduct) {
+      pendingScrollRef.current = { id, ...options };
+      closeProduct();
+      return;
+    }
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    if (options?.focusSearch) window.requestAnimationFrame(() => searchInputRef.current?.focus());
+  };
+  useEffect(() => {
+    if (activeProduct || !pendingScrollRef.current) return;
+    const { id, focusSearch: shouldFocusSearch } = pendingScrollRef.current;
+    pendingScrollRef.current = null;
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      if (shouldFocusSearch) searchInputRef.current?.focus();
+    });
   }, [activeProduct]);
 
   // Previously only set inside openProduct(), which meant a direct
@@ -540,7 +569,7 @@ function App() {
   const shopByTerm = (term) => {
     setSearch(term);
     setFamily('All');
-    document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
+    goToSection('collection');
   };
 
   const itemCount = cart?.totalQuantity || 0;
@@ -681,10 +710,7 @@ function App() {
     return { type: null, product: null };
   }, [cart, products, discoveryProduct]);
 
-  const focusSearch = () => {
-    document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
-    window.requestAnimationFrame(() => searchInputRef.current?.focus());
-  };
+  const focusSearch = () => goToSection('collection', { focusSearch: true });
   // Split so the mobile filter drawer's "Clear all" can reset just the
   // filter facets without also wiping the search box it doesn't contain
   // (that would reset text the user can still see and is still typing in).
@@ -739,12 +765,13 @@ function App() {
           onToggle={() => setShopMenuOpen((open) => !open)}
           onClose={() => setShopMenuOpen(false)}
           onShopNew={() => { shopByTerm('New'); setShopMenuOpen(false); }}
+          onGoToSection={goToSection}
         />
-        <a href="#best-sellers">Best Sellers</a>
+        <a href="#best-sellers" onClick={(event) => { event.preventDefault(); goToSection('best-sellers'); }}>Best Sellers</a>
         <button onClick={() => setQuizOpen(true)}>Scent Finder</button>
-        <a href="#featured-brands">Brands</a>
-        <a href="#discovery">Discovery Sets</a>
-        <a href="#gifts">Gifts</a>
+        <a href="#featured-brands" onClick={(event) => { event.preventDefault(); goToSection('featured-brands'); }}>Brands</a>
+        <a href="#discovery" onClick={(event) => { event.preventDefault(); goToSection('discovery'); }}>Discovery Sets</a>
+        <a href="#gifts" onClick={(event) => { event.preventDefault(); goToSection('gifts'); }}>Gifts</a>
       </nav>
       <div className="nav-actions">
         <button className="icon-btn" aria-label="Search fragrances" onClick={focusSearch}><Icon name="search"/></button>
@@ -752,7 +779,7 @@ function App() {
           className={`icon-btn${wishlistFilterOn ? ' active' : ''}`}
           aria-label={wishlistFilterOn ? 'Show all fragrances' : 'Show saved fragrances'}
           aria-pressed={wishlistFilterOn}
-          onClick={() => { setWishlistFilterOn((on) => !on); document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' }); }}
+          onClick={() => { setWishlistFilterOn((on) => !on); goToSection('collection'); }}
         ><Icon name="heart" filled={wishlistFilterOn}/></button>
         <button className="bag" onClick={() => setCartOpen(true)} aria-label={`Open bag with ${itemCount} items`}><Icon name="bag"/>{itemCount > 0 && <b>{itemCount}</b>}</button>
       </div>
@@ -1003,7 +1030,7 @@ function App() {
 
     <footer className="site-footer">
       <div><Logo className="footer-logo"/><h2>Choose slowly.<br/><em>Wear confidently.</em></h2></div>
-      <div className="footer-links"><a href="#discovery">Discovery sets</a><a href="#collection">Full bottles</a><a href="#gifts">Gifts</a><button onClick={() => setQuizOpen(true)}>Scent finder</button><a href="#policies">Shipping &amp; returns</a></div>
+      <div className="footer-links"><a href="#discovery" onClick={(event) => { event.preventDefault(); goToSection('discovery'); }}>Discovery sets</a><a href="#collection" onClick={(event) => { event.preventDefault(); goToSection('collection'); }}>Full bottles</a><a href="#gifts" onClick={(event) => { event.preventDefault(); goToSection('gifts'); }}>Gifts</a><button onClick={() => setQuizOpen(true)}>Scent finder</button><a href="#policies" onClick={(event) => { event.preventDefault(); goToSection('policies'); }}>Shipping &amp; returns</a></div>
       <form className="footer-signup" onSubmit={(event) => { event.preventDefault(); if (!signupEmail.trim()) return; setSignupDone(true); setSignupEmail(''); }}>
         <label htmlFor="footer-email">Exclusive launches, private offers and personalized recommendations</label>
         {signupDone ? <p className="signup-done">Thanks — we'll be in touch.</p> : <div className="signup-row">
@@ -1017,7 +1044,7 @@ function App() {
       </p>
     </footer>
 
-    {menuOpen && <Dialog overlayClassName="menu-overlay" label="Mobile menu" dialogRef={menuDialogRef}><DialogClose onClick={() => setMenuOpen(false)} /><nav><a onClick={() => setMenuOpen(false)} href="#discovery">Discovery sets</a><a onClick={() => setMenuOpen(false)} href="#collection">Shop fragrances</a><a onClick={() => setMenuOpen(false)} href="#gifts">Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></Dialog>}
+    {menuOpen && <Dialog overlayClassName="menu-overlay" label="Mobile menu" dialogRef={menuDialogRef}><DialogClose onClick={() => setMenuOpen(false)} /><nav><a href="#discovery" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('discovery'); }}>Discovery sets</a><a href="#collection" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('collection'); }}>Shop fragrances</a><a href="#gifts" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('gifts'); }}>Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></Dialog>}
 
     {quizOpen && <Suspense fallback={null}>
       <QuizModal
