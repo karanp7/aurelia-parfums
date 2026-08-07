@@ -20,18 +20,25 @@ const GATEWAY_HERO = {
 // existing voice - "Choose slowly. Wear confidently." etc.) rather than
 // lifted from any reference moodboard - a shared caption *layout* is
 // fair inspiration, but another brand's actual ad copy isn't Aurelia's
-// to reuse. Easy to swap for real campaign copy later; nothing here is
-// a factual claim the way product data is, so no honesty constraint on
-// wording itself, only on not presenting borrowed copy as original.
+// to reuse. Kept here (used as the accessible label, and as the visible
+// caption if a tile's own image ever fails to load or gets swapped for
+// an uncaptioned photo) even though `captioned: true` tiles currently
+// have this same information baked into the image itself.
 const TILES = [
-  { key: 'women', heading: ['Women'], tagline: 'ELEGANT. RADIANT. ENTIRELY YOU.', cta: "Explore Women's", image: '/images/campaigns/gateway-women.jpg', tone: 'tone-bg-rose' },
-  { key: 'men', heading: ['Men'], tagline: 'STRONG. REFINED. QUIETLY CONFIDENT.', cta: "Explore Men's", image: '/images/campaigns/gateway-men.jpg', tone: 'tone-bg-blue' },
-  { key: 'gifts', heading: ['The Perfect', 'Gift'], tagline: 'THOUGHTFULLY CHOSEN. BEAUTIFULLY GIVEN.', cta: 'Explore Gifts', image: '/images/campaigns/gateway-gifts.jpg', tone: 'tone-bg-amber' }
+  { key: 'women', heading: ['Women'], tagline: 'ELEGANT. RADIANT. ENTIRELY YOU.', cta: "Explore Women's", image: '/images/campaigns/gateway-women.jpg', tone: 'tone-bg-rose', captioned: true },
+  { key: 'men', heading: ['Men'], tagline: 'STRONG. REFINED. QUIETLY CONFIDENT.', cta: "Explore Men's", image: '/images/campaigns/gateway-men.jpg', tone: 'tone-bg-blue', captioned: true },
+  { key: 'gifts', heading: ['The Perfect', 'Gift'], tagline: 'THOUGHTFULLY CHOSEN. BEAUTIFULLY GIVEN.', cta: 'Explore Gifts', image: '/images/campaigns/gateway-gifts.jpg', tone: 'tone-bg-amber', captioned: true }
 ];
 
 function GatewayTile({ tile, onSelect }) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // `captioned` tiles already have the heading/tagline/CTA baked into the
+  // photo itself (see TILES above) - rendering the same text again in
+  // HTML on top would double it up. Falls back to the real HTML caption
+  // whenever there's nothing baked in to show instead: the image failed
+  // to load, or a future photo is captioned: false.
+  const showOverlay = failed || !tile.captioned;
   return (
     <button type="button" className={`gateway-tile${failed ? ` gateway-tile-fallback ${tile.tone}` : ''}`} onClick={() => onSelect(tile.key)}>
       {!failed && (
@@ -44,13 +51,17 @@ function GatewayTile({ tile, onSelect }) {
           onError={() => setFailed(true)}
         />
       )}
-      <span className="gateway-tile-scrim" aria-hidden="true" />
-      <span className="gateway-tile-copy">
-        <span className="gateway-tile-label">{tile.heading.map((line) => <span key={line}>{line}</span>)}</span>
-        <span className="gateway-tile-rule" aria-hidden="true" />
-        <span className="gateway-tile-tagline">{tile.tagline}</span>
-        <span className="gateway-tile-cta">{tile.cta} <Icon name="arrowRight" size={13}/></span>
-      </span>
+      {showOverlay && <span className="gateway-tile-scrim" aria-hidden="true" />}
+      {showOverlay ? (
+        <span className="gateway-tile-copy">
+          <span className="gateway-tile-label">{tile.heading.map((line) => <span key={line}>{line}</span>)}</span>
+          <span className="gateway-tile-rule" aria-hidden="true" />
+          <span className="gateway-tile-tagline">{tile.tagline}</span>
+          <span className="gateway-tile-cta">{tile.cta} <Icon name="arrowRight" size={13}/></span>
+        </span>
+      ) : (
+        <span className="sr-only">{tile.heading.join(' ')} — {tile.tagline} {tile.cta}</span>
+      )}
     </button>
   );
 }

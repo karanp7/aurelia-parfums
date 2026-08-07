@@ -66,7 +66,7 @@ the text overlay stays legible.
 The site's front door (`EntryGateway.jsx`) — shown once per browser
 session before the shop itself. Separate filenames from the hero above
 so the two campaigns can be shot/updated independently. Same fallback
-contract: nothing here yet, so the hero falls back to a neutral dark
+contract when a file is missing: the hero falls back to a neutral dark
 gradient and each of the three tiles falls back to one of the site's
 existing decorative tones, never a broken-image icon.
 
@@ -79,23 +79,33 @@ public/images/campaigns/gateway-men.jpg
 public/images/campaigns/gateway-gifts.jpg
 ```
 
+**Current state:** all six are filled with a placeholder mockup (cropped
+from `sections.png`/`homepage.png` in this same folder) — not final,
+licensed campaign photography. Swap any of them out for the real thing
+whenever it's shot; same filenames, no code changes needed.
+
 ## Gateway hero — `gateway-hero-desktop/tablet/mobile.jpg`
 
-- Same crop/composition brief as the shop hero above, but this one is
-  shown **centered full-bleed** behind a centered headline, not a
-  left-aligned one — keep the **center** of the frame calm/uncluttered
-  rather than the left third, and avoid anything that needs to be read
-  directly behind the middle of the frame.
+- Shown **centered full-bleed** behind a centered headline, not a
+  left-aligned one like the shop hero — keep the **center** of the frame
+  calm/uncluttered rather than the left third, and avoid anything that
+  needs to be read directly behind the middle of the frame.
 - No text baked in, no white/studio background, same as every other
   campaign asset on this site.
 - Desktop ~2400×1200 (2:1), tablet a tighter crop of the same shot,
-  mobile ~1200×1600 portrait.
+  mobile a portrait crop of the same shot.
 
 ## Category tiles — `gateway-women.jpg` / `gateway-men.jpg` / `gateway-gifts.jpg`
 
-- **Size:** ~1200×1600px, portrait (shown at `object-fit: cover` in a
-  3:4 box on desktop, 4:3 on mobile where the three stack vertically).
-- Each tile has its own dark scrim gradient along the **bottom** third
-  for the label/CTA sitting there — keep the bottom of the frame darker
-  and less busy than the rest, similar to the mobile hero's safe area.
-- No text baked in.
+- **Size/ratio:** tall portrait, roughly 1:2 (width:height) — shown at
+  `object-fit: cover` in a matching 1:2 box at every breakpoint (three
+  across on desktop, stacked on mobile), chosen to match this photo
+  composition without cropping into the subject.
+- The current placeholder set has its label/tagline/CTA baked directly
+  into the photo (bottom-left, warm gold on a dark scrim) - `EntryGateway.jsx`
+  detects this per tile (`captioned: true` in its TILES array) and skips
+  rendering the matching real-HTML caption on top so the two don't double
+  up. **A real photography set should leave that zone dark/uncluttered
+  and NOT bake text in** (matching every other image on this site) - set
+  that tile's `captioned` back to `false` and the real HTML caption
+  (already written, just currently suppressed) renders on top instead.
