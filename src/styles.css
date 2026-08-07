@@ -135,6 +135,50 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
   .entry-gateway-tiles{grid-template-columns:1fr}
 }
 
+/* Category Landing (H-08): the Men/Women editorial page reached from the
+   entry gateway or /men /women directly. Reuses the shop's own tokens/
+   tone system throughout rather than inventing new ones - see
+   CategoryLanding.jsx for which parts are real per-gender Shopify data
+   (family/occasion/concentration) versus reused sitewide components
+   (Mood tiles). */
+.category-subnav{padding-top:calc(110px + var(--space-3));background:var(--paper);border-bottom:1px solid var(--line);padding-left:6vw;padding-right:6vw;padding-bottom:22px;display:flex;align-items:baseline;gap:var(--space-5);flex-wrap:wrap}
+.category-subnav h1{font:400 28px 'Italiana',serif;letter-spacing:-.01em;margin:0}
+.category-subnav-tabs{display:flex;gap:26px;flex-wrap:wrap}
+.category-subnav-tabs button{border:0;background:none;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:4px 0;transition:color .2s var(--ease)}
+.category-subnav-tabs button:hover{color:var(--ink)}
+.category-hero{position:relative;min-height:min(70vh,620px);display:flex;align-items:center;padding-left:6vw;color:#fff}
+.category-hero-media{background:radial-gradient(135% 105% at 78% 6%,#332b26 0%,var(--graphite) 44%,#161210 100%)}
+.category-hero-copy{position:relative;z-index:2;max-width:600px;display:flex;flex-direction:column;gap:16px}
+.category-hero-copy .overline{color:rgba(255,255,255,.8)}
+.category-hero-copy h2{font:400 clamp(44px,6vw,80px)/.95 'Italiana',serif;letter-spacing:-.03em;margin:0}
+.category-hero-copy .lede{max-width:46ch;line-height:1.7;color:rgba(255,255,255,.74);font-size:14px}
+.category-hero-copy .btn{align-self:flex-start;margin-top:8px}
+
+.promo-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--line)}
+.promo-tile{position:relative;aspect-ratio:4/3;overflow:hidden;border:0;padding:0;display:block;width:100%;cursor:pointer;background:var(--paper)}
+.promo-tile-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s var(--ease),transform .6s var(--ease)}
+.promo-tile-image.is-loaded{opacity:1}
+.promo-tile:hover .promo-tile-image{transform:scale(1.04)}
+.promo-tile-fallback{background-color:var(--stage)}
+.promo-tile-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,11,9,0) 40%,rgba(15,11,9,.6) 100%)}
+.promo-tile-label{position:absolute;left:22px;bottom:20px;z-index:1;color:#fff;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+
+.category-mood,.category-shortcuts{padding:var(--space-6) 6vw}
+.category-cta{padding:0 6vw var(--space-7);display:flex;justify-content:center}
+.shortcut-row{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-top:var(--space-5)}
+.shortcut-row-scroll{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:8px}
+.shortcut-row-scroll .shortcut-tile{flex:0 0 auto;scroll-snap-align:start}
+.shortcut-tile{width:140px;height:140px;border-radius:50%;border:0;display:grid;place-items:center;text-align:center;padding:0 16px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
+.shortcut-tile:hover{transform:translateY(-4px);box-shadow:var(--shadow-soft)}
+@media(max-width:800px){
+  .category-subnav{padding-top:calc(100px + var(--space-2));padding-left:18px;padding-right:18px;padding-bottom:18px;gap:var(--space-4)}
+  .category-subnav-tabs{gap:18px}
+  .category-hero{padding-left:24px;min-height:60vh}
+  .promo-tiles{grid-template-columns:1fr}
+  .category-mood,.category-shortcuts{padding:var(--space-5) 18px}
+  .shortcut-tile{width:120px;height:120px}
+}
+
 .trust-row{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}.trust-row div{padding:52px 30px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:9px}.trust-row strong,.trust-row span{display:block}.trust-row svg{color:var(--gold);margin-bottom:4px}.trust-row strong{font:600 12px 'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.06em}
 /* P1 fix (#11): trust-row span was 9px, now 11px. */
 .trust-row span{font-size:12px;line-height:1.5;color:var(--muted);max-width:200px}.collection,.reviews{padding:var(--space-7) 6vw}.section-intro{max-width:920px}.section-intro h2{font-size:clamp(58px,6vw,88px)}.policies article>span{font-size:10px;color:var(--wine);letter-spacing:.16em}.policies h3{font:var(--h-card);margin:50px 0 13px}.policies p{font-size:13px;line-height:1.75;color:var(--muted)}.collection-head{display:grid;grid-template-columns:1.3fr .7fr;align-items:end;gap:40px}.collection-head h2{font-size:clamp(55px,6vw,86px)}.collection-head>p{max-width:410px;color:var(--muted);line-height:1.8;font-size:12px}

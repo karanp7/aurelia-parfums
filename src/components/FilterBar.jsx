@@ -43,6 +43,7 @@ export default function FilterBar({
   concentration, concentrationOptions = [], onConcentrationChange,
   newArrivalOnly, onNewArrivalChange,
   bestSellerOnly, onBestSellerChange,
+  onSaleOnly, onOnSaleChange,
   sort, sortOptions, onSortChange,
   activeFilterCount = 0, onOpenFilters, containerRef
 }) {
@@ -95,6 +96,7 @@ export default function FilterBar({
         <div className="discovery-chips" role="group" aria-label="Discovery filters">
           <button type="button" className={`discovery-chip${bestSellerOnly ? ' active' : ''}`} aria-pressed={bestSellerOnly} onClick={() => onBestSellerChange(!bestSellerOnly)}>Best Sellers</button>
           <button type="button" className={`discovery-chip${newArrivalOnly ? ' active' : ''}`} aria-pressed={newArrivalOnly} onClick={() => onNewArrivalChange(!newArrivalOnly)}>New Arrivals</button>
+          <button type="button" className={`discovery-chip${onSaleOnly ? ' active' : ''}`} aria-pressed={onSaleOnly} onClick={() => onOnSaleChange(!onSaleOnly)}>On Sale</button>
         </div>
         <button type="button" className="filter-drawer-trigger" onClick={onOpenFilters}>
           Filters{activeFilterCount > 0 && <span className="filter-count-badge">{activeFilterCount}</span>}

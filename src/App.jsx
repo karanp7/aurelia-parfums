@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'rea
 import { useNavigate, useLocation, useSearchParams, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import EntryGateway from './components/EntryGateway.jsx';
+import CategoryLanding from './components/CategoryLanding.jsx';
 import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
 import Dialog, { DialogClose } from './components/Dialog.jsx';
@@ -169,7 +170,7 @@ function useDialogA11y(isOpen, onClose) {
 // click outside both close it, matching the spirit of useDialogA11y above
 // without the full focus-trap machinery a real modal needs (a dropdown menu
 // is dismissable, not modal).
-function ShopDropdown({ open, onToggle, onClose, onShopNew, onGoToSection }) {
+function ShopDropdown({ open, onToggle, onClose, onShopNew, onGoToSection, onGoToCategory }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -189,6 +190,8 @@ function ShopDropdown({ open, onToggle, onClose, onShopNew, onGoToSection }) {
       <button aria-haspopup="true" aria-expanded={open} onClick={onToggle}>Shop <Icon name="chevronDown"/></button>
       {open && <div className="shop-dropdown-menu" role="menu">
         <a role="menuitem" href="#collection" onClick={(event) => { event.preventDefault(); onGoToSection('collection'); onClose(); }}>All Fragrances</a>
+        <a role="menuitem" href="/men" onClick={(event) => { event.preventDefault(); onGoToCategory('men'); onClose(); }}>Men</a>
+        <a role="menuitem" href="/women" onClick={(event) => { event.preventDefault(); onGoToCategory('women'); onClose(); }}>Women</a>
         <a role="menuitem" href="#best-sellers" onClick={(event) => { event.preventDefault(); onGoToSection('best-sellers'); onClose(); }}>Best Sellers</a>
         <button role="menuitem" onClick={onShopNew}>New Arrivals</button>
         <a role="menuitem" href="#gifts" onClick={(event) => { event.preventDefault(); onGoToSection('gifts'); onClose(); }}>Gifts</a>
@@ -216,12 +219,13 @@ function readFilterParams(search) {
     occasion: params.get('occasion') || 'All',
     concentration: params.get('concentration') || 'All',
     newArrivalOnly: params.get('new') === '1',
-    bestSellerOnly: params.get('bestseller') === '1'
+    bestSellerOnly: params.get('bestseller') === '1',
+    onSaleOnly: params.get('sale') === '1'
   };
 }
 
 function App() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const initialFilters = useRef(readFilterParams(searchParams.toString() ? `?${searchParams.toString()}` : '')).current;
 
   const [family, setFamily] = useState(initialFilters.family);
@@ -247,6 +251,11 @@ function App() {
   // toggles instead of read-only chrome.
   const [newArrivalOnly, setNewArrivalOnly] = useState(initialFilters.newArrivalOnly);
   const [bestSellerOnly, setBestSellerOnly] = useState(initialFilters.bestSellerOnly);
+  // On Sale: real, not fabricated - the exact same compareAtPrice data
+  // ProductCard's own savings-badge already reads, exposed as a filter
+  // toggle instead of read-only chrome (same reasoning as New Arrival/
+  // Best Seller above).
+  const [onSaleOnly, setOnSaleOnly] = useState(initialFilters.onSaleOnly);
 
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -350,6 +359,38 @@ function App() {
   const handle = productMatch?.params?.handle;
   const activeProductFromList = handle ? products.find((product) => product.handle === handle) : null;
 
+  // Real routes (H-08), same reasoning as /products/:handle above: Men/
+  // Women get their own editorial landing page (CategoryLanding) reached
+  // either from the entry gateway or directly/bookmarked, with working
+  // Back navigation for free via the browser's own history instead of a
+  // same-URL trick like Gifts (which has no dedicated page, just a scroll
+  // target on the shop homepage) needs.
+  const categoryGender = location.pathname === '/men' ? 'Men' : location.pathname === '/women' ? 'Women' : null;
+
+  // Deep-linking straight to /men or /women (a bookmark, a shared link) -
+  // never goes through enterSite(), which is normally what sets the
+  // gender filter - so the landing page's own filter shortcuts and the
+  // eventual "Shop All" handoff to the product grid stay in sync with
+  // the URL either way.
+  useEffect(() => {
+    if (categoryGender) setGender(categoryGender);
+  }, [categoryGender]);
+
+  // Any deep link past the gateway (a category page, same as above, or a
+  // product page - a bookmark, a shared link) also never goes through
+  // enterSite(), the only other place hasEntered gets set. Left false,
+  // clicking anything that eventually navigates to '/' (a family tab on
+  // /men, "Back to shop" on a product page) would land back on '/' with
+  // hasEntered still false - satisfying the gateway's own early-return
+  // condition and showing it again mid-navigation, corrupting whatever
+  // filter/scroll was in flight (H-08 bug: a family tab click bounced back
+  // to /men instead of reaching the filtered grid). Bookmarking either
+  // kind of deep link should behave like having already chosen something
+  // on the gateway, since in a real sense the shopper already has.
+  useEffect(() => {
+    if ((categoryGender || handle) && !hasEntered) setHasEntered(true);
+  }, [categoryGender, handle, hasEntered]);
+
   useEffect(() => {
     if (!handle || activeProductFromList || productsLoading || !isShopifyConfigured) { setDirectProduct(null); return undefined; }
     let cancelled = false;
@@ -360,18 +401,46 @@ function App() {
   }, [handle, activeProductFromList, productsLoading]);
 
   const activeProduct = activeProductFromList || directProduct;
-  // Re-scans/re-observes whenever the homepage's [data-reveal] sections
-  // actually (re)mount - true right after either the product page closes
-  // or the entry gateway is passed (both swap the homepage sections in
-  // for the first time that render), same reasoning as the PDP case
-  // alone used to cover before the gateway existed.
-  useReveal(hasEntered && !activeProduct);
+  // Re-scans/re-observes whenever the current [data-reveal] sections
+  // actually (re)mount - true right after the product page closes, the
+  // entry gateway is passed, or navigating directly between /men and
+  // /women (each swaps in its own distinct set of data-reveal sections,
+  // so hasEntered/activeProduct alone wouldn't change between those two
+  // and the effect wouldn't otherwise re-run).
+  //
+  // categoryGender is checked *before* !hasEntered deliberately: a direct
+  // deep link to /men already renders CategoryLanding on its very first
+  // render regardless of hasEntered (the gateway's own early-return only
+  // ever applies to '/'), but hasEntered still starts false and only
+  // flips true a moment later via the sync effect below. Checking
+  // !hasEntered first produced a spurious 'gateway' key on that first
+  // render (even though CategoryLanding, not the gateway, was what
+  // actually mounted), which changed to the correct category key once
+  // hasEntered caught up.
+  //
+  // The `products.length > 0` suffix on the category key covers a second,
+  // separate gap: unlike the homepage's data-reveal sections (which
+  // always render their own outer shell and just leave the inner grid
+  // empty until data arrives), CategoryLanding's family/occasion/
+  // concentration shortcuts conditionally render the *entire* data-reveal
+  // section only once real product data resolves those options - so on
+  // first mount, with products still [], those sections don't exist in
+  // the DOM at all yet. A key that doesn't change once they do appear
+  // left the very first (and only) scan looking for a section that
+  // wasn't there yet, permanently stuck at opacity:0 (confirmed via a
+  // direct trace: useReveal's one scan found only 2 of the page's
+  // data-reveal sections, missing the family-shortcuts one entirely).
+  useReveal(activeProduct ? 'product' : categoryGender ? `${categoryGender}-${products.length > 0}` : (!hasEntered ? 'gateway' : 'home'));
   const closeProduct = () => navigate('/');
   const openProduct = (product) => navigate(`/products/${product.handle}`);
 
   useEffect(() => {
-    document.title = activeProduct ? `${activeProduct.name} — Aurelia Parfums` : 'Aurelia — Find your signature scent';
-  }, [activeProduct]);
+    document.title = activeProduct
+      ? `${activeProduct.name} — Aurelia Parfums`
+      : categoryGender
+        ? `${categoryGender}'s Fragrances — Aurelia Parfums`
+        : 'Aurelia — Find your signature scent';
+  }, [activeProduct, categoryGender]);
 
   // Every nav/footer/menu link that jumps to a homepage section (`#collection`,
   // `#best-sellers`, etc.) assumes those sections are mounted - true once
@@ -385,53 +454,53 @@ function App() {
   // actually painted before `scrollIntoView` measures it).
   const pendingScrollRef = useRef(null);
   const goToSection = (id, options) => {
-    if (activeProduct || !hasEntered) {
+    if (activeProduct || !hasEntered || categoryGender) {
       pendingScrollRef.current = { id, ...options };
       if (activeProduct) closeProduct();
+      else if (categoryGender) navigate('/');
       return;
     }
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
     if (options?.focusSearch) window.requestAnimationFrame(() => searchInputRef.current?.focus());
   };
   useEffect(() => {
-    if (activeProduct || !hasEntered || !pendingScrollRef.current) return;
+    if (activeProduct || !hasEntered || categoryGender || !pendingScrollRef.current) return;
     const { id, focusSearch: shouldFocusSearch } = pendingScrollRef.current;
     pendingScrollRef.current = null;
     requestAnimationFrame(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
       if (shouldFocusSearch) searchInputRef.current?.focus();
     });
-  }, [activeProduct, hasEntered]);
+  }, [activeProduct, hasEntered, categoryGender]);
 
   // The three entry-gateway choices. Men/Women set the real, tag-derived
-  // gender filter (see deriveGender in shopifyProducts.js) and land on the
-  // shop grid; Gifts needs no filter, just a scroll straight to the real
-  // #gifts section already on the homepage. All three mark the gateway
-  // seen for the rest of this browser session and reuse goToSection's
-  // existing defer-until-mounted mechanism rather than a bespoke one.
+  // gender filter (see deriveGender in shopifyProducts.js) - applied once
+  // the shopper actually reaches the product grid - and land on their own
+  // real CategoryLanding route (H-08); Gifts needs no filter or dedicated
+  // page, just a scroll straight to the real #gifts section already on
+  // the shop homepage. All three mark the gateway seen for the rest of
+  // this browser session.
   //
-  // Neither goToSection nor setHasEntered on its own touches browser
-  // history - so previously, pressing Back right after choosing Men/Women/
-  // Gifts had nothing to return to (H-06 bug report: "no back option").
-  // `navigate('/?_e=1')` here (a real push, unlike every filter change's
-  // {replace:true}) gives the browser one concrete entry to pop back to -
-  // the throwaway `_e=1` marker forces a genuinely different URL from
-  // wherever the gateway itself already is (navigating to an identical
-  // URL doesn't mint a new history entry). The immediate follow-up
-  // {replace:true} strips it back out of the address bar right away
-  // (replace never creates its own extra entry, just edits the one just
-  // pushed) - Men/Women's own filter-URL-sync effect would clean it up a
-  // moment later anyway once gender/family settle, but Gifts touches no
-  // filter state, so nothing else would ever fire that cleanup for it.
+  // Neither a plain navigate nor setHasEntered on its own reliably left
+  // Back with something to return to (H-06 bug report: "no back option").
+  // /men and /women are genuinely different URLs from the gateway's own
+  // '/', so navigating to them mints a real history entry on its own -
+  // no same-URL trick needed there. Gifts stays on '/', so it still needs
+  // one: `navigate('/?_e=1')` (a real push, unlike every filter change's
+  // {replace:true}) forces a genuinely different URL to get a distinct
+  // entry at all, and the immediate {replace:true} follow-up strips the
+  // throwaway marker back out of the address bar right away.
   const enterSite = (choice) => {
     gatewayEntryKeyRef.current = location.key;
-    if (choice === 'men') { setGender('Men'); setFamily('All'); goToSection('collection'); }
-    else if (choice === 'women') { setGender('Women'); setFamily('All'); goToSection('collection'); }
-    else if (choice === 'gifts') { goToSection('gifts'); }
     sessionStorage.setItem(ENTRY_GATEWAY_KEY, '1');
-    navigate('/?_e=1');
-    navigate('/', { replace: true });
     setHasEntered(true);
+    if (choice === 'men') { setGender('Men'); setFamily('All'); navigate('/men'); }
+    else if (choice === 'women') { setGender('Women'); setFamily('All'); navigate('/women'); }
+    else if (choice === 'gifts') {
+      goToSection('gifts');
+      navigate('/?_e=1');
+      navigate('/', { replace: true });
+    }
   };
 
   // Pressing Back enough times to land back on the exact entry the
@@ -547,7 +616,7 @@ function App() {
   // trigger so users know something is applied without opening the drawer.
   const activeFilterCount = [
     family !== 'All', brand !== 'All', priceBucket !== 'all', availabilityOnly, sizeFilter !== 'All',
-    gender !== 'All', occasion !== 'All', concentration !== 'All', newArrivalOnly, bestSellerOnly
+    gender !== 'All', occasion !== 'All', concentration !== 'All', newArrivalOnly, bestSellerOnly, onSaleOnly
   ].filter(Boolean).length;
 
   const filtered = useMemo(() => products.filter((product) => {
@@ -566,14 +635,15 @@ function App() {
     const matchesConcentration = concentration === 'All' || findConcentration(product) === concentration;
     const matchesNewArrival = !newArrivalOnly || product.badge === 'New';
     const matchesBestSeller = !bestSellerOnly || product.badge === 'Bestseller';
+    const matchesOnSale = !onSaleOnly || Boolean(product.compareAtPrice);
     const matchesAvailability = !availabilityOnly || product.availableForSale;
     const matchesSize = sizeFilter === 'All' || product.sizes.some((size) => size.label === sizeFilter);
     const matchesPrice = PRICE_BUCKETS.find((bucket) => bucket.value === priceBucket)?.test(product.price) ?? true;
     return (family === 'All' || product.family === family)
       && searchable.includes(search.toLowerCase())
       && matchesWishlist && matchesBrand && matchesAvailability && matchesSize && matchesPrice
-      && matchesGender && matchesOccasion && matchesConcentration && matchesNewArrival && matchesBestSeller;
-  }), [products, family, search, wishlistFilterOn, wishlist, brand, availabilityOnly, sizeFilter, priceBucket, gender, occasion, concentration, newArrivalOnly, bestSellerOnly]);
+      && matchesGender && matchesOccasion && matchesConcentration && matchesNewArrival && matchesBestSeller && matchesOnSale;
+  }), [products, family, search, wishlistFilterOn, wishlist, brand, availabilityOnly, sizeFilter, priceBucket, gender, occasion, concentration, newArrivalOnly, bestSellerOnly, onSaleOnly]);
 
   // Live suggestions as you type, before pressing Enter - real matching
   // products only (name/house/notes, the same fields the search itself
@@ -597,7 +667,7 @@ function App() {
   // Reset pagination whenever the result set's composition changes, so
   // switching filters never leaves the grid stuck deep in a stale "show
   // more" state from a previous, larger result set.
-  useEffect(() => { setVisibleCount(12); }, [family, search, brand, priceBucket, availabilityOnly, sizeFilter, sort, wishlistFilterOn, gender, occasion, concentration, newArrivalOnly, bestSellerOnly]);
+  useEffect(() => { setVisibleCount(12); }, [family, search, brand, priceBucket, availabilityOnly, sizeFilter, sort, wishlistFilterOn, gender, occasion, concentration, newArrivalOnly, bestSellerOnly, onSaleOnly]);
 
   // Keeps the URL in sync as filters change (replace, not push, so every
   // keystroke/click doesn't spam browser history) - only defaults are
@@ -605,7 +675,23 @@ function App() {
   // out deliberately: syncing every keystroke would thrash history/URL on
   // every character even with replace, and search isn't counted in
   // activeFilterCount for the same reason.
+  //
+  // Skipped entirely while on a category page: there's no filter UI there
+  // to reflect. Checks the real, authoritative window.location.pathname
+  // here rather than React Router's own `location`/categoryGender -
+  // confirmed via a direct trace that React Router's own location can lag
+  // window.location.pathname by a render or two after a same-tick
+  // navigate() call elsewhere (e.g. enterSite's setGender + navigate
+  // ('/men'), or goToSection's navigate('/') when leaving a category
+  // page). Also navigates explicitly with `{ pathname: window.location
+  // .pathname, search }` instead of setSearchParams(params) - that
+  // shorthand resolves the target relative to React Router's *own*
+  // (potentially stale) current location internally, which silently
+  // rewrote a just-pushed /men or a just-navigated-to '/' back to
+  // wherever React Router still thought it was, even once the effect's
+  // own window.location-based guard above correctly let it through.
   useEffect(() => {
+    if (window.location.pathname !== '/') return;
     const params = new URLSearchParams();
     if (family !== 'All') params.set('family', family);
     if (sort !== 'best-selling') params.set('sort', sort);
@@ -618,9 +704,10 @@ function App() {
     if (concentration !== 'All') params.set('concentration', concentration);
     if (newArrivalOnly) params.set('new', '1');
     if (bestSellerOnly) params.set('bestseller', '1');
-    setSearchParams(params, { replace: true });
+    if (onSaleOnly) params.set('sale', '1');
+    navigate({ pathname: '/', search: params.toString() }, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [family, sort, brand, priceBucket, availabilityOnly, sizeFilter, gender, occasion, concentration, newArrivalOnly, bestSellerOnly]);
+  }, [family, sort, brand, priceBucket, availabilityOnly, sizeFilter, gender, occasion, concentration, newArrivalOnly, bestSellerOnly, onSaleOnly, categoryGender]);
 
   const quizMatches = useMemo(() => rankMatches(products, quizAnswers, 3), [products, quizAnswers]);
 
@@ -645,6 +732,25 @@ function App() {
   const shopByTerm = (term) => {
     setSearch(term);
     setFamily('All');
+    goToSection('collection');
+  };
+
+  // CategoryLanding's own filter shortcuts (family tabs, New Arrivals/Best
+  // Sellers/On Sale tiles, occasion rail, concentration tiles) all resolve
+  // to the same real filter state already driving the Collection grid -
+  // this just sets whichever facet was clicked (defaulting every other
+  // facet back to "All"/off, like clicking a fresh filter from any other
+  // empty state) and hands off to goToSection, which already knows how to
+  // navigate off a category page and defer the scroll until the grid
+  // exists. `gender` is deliberately untouched - it's already correct for
+  // whichever landing page this was clicked from.
+  const applyCategoryFilter = (overrides = {}) => {
+    setFamily(overrides.family ?? 'All');
+    setOccasion(overrides.occasion ?? 'All');
+    setConcentration(overrides.concentration ?? 'All');
+    setNewArrivalOnly(Boolean(overrides.newArrivalOnly));
+    setBestSellerOnly(Boolean(overrides.bestSellerOnly));
+    setOnSaleOnly(Boolean(overrides.onSaleOnly));
     goToSection('collection');
   };
 
@@ -791,7 +897,7 @@ function App() {
   // (that would reset text the user can still see and is still typing in).
   const clearFilterFacets = () => {
     setFamily('All'); setBrand('All'); setPriceBucket('all'); setAvailabilityOnly(false); setSizeFilter('All');
-    setGender('All'); setOccasion('All'); setConcentration('All'); setNewArrivalOnly(false); setBestSellerOnly(false);
+    setGender('All'); setOccasion('All'); setConcentration('All'); setNewArrivalOnly(false); setBestSellerOnly(false); setOnSaleOnly(false);
   };
   const clearFilters = () => { setSearch(''); clearFilterFacets(); };
 
@@ -849,6 +955,7 @@ function App() {
           onClose={() => setShopMenuOpen(false)}
           onShopNew={() => { shopByTerm('New'); setShopMenuOpen(false); }}
           onGoToSection={goToSection}
+          onGoToCategory={(choice) => navigate(`/${choice}`)}
         />
         <a href="#best-sellers" onClick={(event) => { event.preventDefault(); goToSection('best-sellers'); }}>Best Sellers</a>
         <button onClick={() => setQuizOpen(true)}>Scent Finder</button>
@@ -881,6 +988,16 @@ function App() {
         wishlist={wishlist}
         toggleWishlist={toggleWishlist}
         openProduct={openProduct}
+      /> : categoryGender ? <CategoryLanding
+        gender={categoryGender}
+        products={products}
+        moodTiles={MOOD_TILES}
+        onShopAll={() => applyCategoryFilter({})}
+        onFamily={(family) => applyCategoryFilter({ family })}
+        onPromo={(type) => applyCategoryFilter({ [type]: true })}
+        onMood={shopByTerm}
+        onOccasion={(occasion) => applyCategoryFilter({ occasion })}
+        onConcentration={(concentration) => applyCategoryFilter({ concentration })}
       /> : <>
       {/* Collection now leads the shop homepage (H-07): the entry gateway
           already delivers the "hero" moment before this page is ever
@@ -912,6 +1029,7 @@ function App() {
           concentration={concentration} concentrationOptions={concentrationOptions} onConcentrationChange={setConcentration}
           newArrivalOnly={newArrivalOnly} onNewArrivalChange={setNewArrivalOnly}
           bestSellerOnly={bestSellerOnly} onBestSellerChange={setBestSellerOnly}
+          onSaleOnly={onSaleOnly} onOnSaleChange={setOnSaleOnly}
           sort={sort} sortOptions={Object.entries(SORT_OPTIONS).map(([value, option]) => ({ value, label: option.label }))} onSortChange={setSort}
           activeFilterCount={activeFilterCount} onOpenFilters={() => setFilterDrawerOpen(true)}
         />}
@@ -928,6 +1046,7 @@ function App() {
           concentration={concentration} concentrationOptions={concentrationOptions} onConcentrationChange={setConcentration}
           newArrivalOnly={newArrivalOnly} onNewArrivalChange={setNewArrivalOnly}
           bestSellerOnly={bestSellerOnly} onBestSellerChange={setBestSellerOnly}
+          onSaleOnly={onSaleOnly} onOnSaleChange={setOnSaleOnly}
           onClear={clearFilterFacets}
           resultCount={filtered.length}
         />}

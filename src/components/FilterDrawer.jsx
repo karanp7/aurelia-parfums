@@ -25,6 +25,7 @@ export default function FilterDrawer({
   concentration, concentrationOptions = [], onConcentrationChange,
   newArrivalOnly, onNewArrivalChange,
   bestSellerOnly, onBestSellerChange,
+  onSaleOnly, onOnSaleChange,
   onClear, resultCount
 }) {
   return (
@@ -45,6 +46,7 @@ export default function FilterDrawer({
             <div className="discovery-chips" role="group" aria-label="Discovery filters">
               <button type="button" className={`discovery-chip${bestSellerOnly ? ' active' : ''}`} aria-pressed={bestSellerOnly} onClick={() => onBestSellerChange(!bestSellerOnly)}>Best Sellers</button>
               <button type="button" className={`discovery-chip${newArrivalOnly ? ' active' : ''}`} aria-pressed={newArrivalOnly} onClick={() => onNewArrivalChange(!newArrivalOnly)}>New Arrivals</button>
+              <button type="button" className={`discovery-chip${onSaleOnly ? ' active' : ''}`} aria-pressed={onSaleOnly} onClick={() => onOnSaleChange(!onSaleOnly)}>On Sale</button>
             </div>
           </div>
           <Dropdown label="Brand" value={brand} onChange={onBrandChange} options={[{ value: 'All', label: 'All brands' }, ...brandOptions.map((item) => ({ value: item, label: item }))]} />
