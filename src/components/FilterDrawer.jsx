@@ -4,7 +4,7 @@ import Dropdown from './Dropdown.jsx';
 import Button from './Button.jsx';
 import { PRICE_BUCKETS, AVAILABILITY_OPTIONS } from './FilterBar.jsx';
 
-const PLACEHOLDER_FACETS = ['Gender', 'Season'];
+const PLACEHOLDER_FACETS = ['Season'];
 
 // Mobile-only bottom sheet holding every filter control (the same
 // state/handlers FilterBar uses on desktop — nothing here is a separate
@@ -20,6 +20,7 @@ export default function FilterDrawer({
   priceBucket, onPriceBucketChange,
   availabilityOnly, onAvailabilityChange,
   sizeFilter, sizeOptions, onSizeChange,
+  gender, genderOptions = [], onGenderChange,
   occasion, occasionOptions = [], onOccasionChange,
   concentration, concentrationOptions = [], onConcentrationChange,
   newArrivalOnly, onNewArrivalChange,
@@ -50,6 +51,9 @@ export default function FilterDrawer({
           <Dropdown label="Price" value={priceBucket} onChange={onPriceBucketChange} options={PRICE_BUCKETS.map(({ value, label }) => ({ value, label }))} />
           <Dropdown label="Availability" value={availabilityOnly ? 'in-stock' : 'all'} onChange={(value) => onAvailabilityChange(value === 'in-stock')} options={AVAILABILITY_OPTIONS} />
           <Dropdown label="Size" value={sizeFilter} onChange={onSizeChange} options={[{ value: 'All', label: 'All sizes' }, ...sizeOptions.map((item) => ({ value: item, label: item }))]} />
+          {genderOptions.length > 0 && (
+            <Dropdown label="Gender" value={gender} onChange={onGenderChange} options={[{ value: 'All', label: 'All' }, ...genderOptions.map((item) => ({ value: item, label: item }))]} />
+          )}
           {occasionOptions.length > 0 && (
             <Dropdown label="Occasion" value={occasion} onChange={onOccasionChange} options={[{ value: 'All', label: 'Any occasion' }, ...occasionOptions.map((item) => ({ value: item, label: item }))]} />
           )}

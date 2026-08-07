@@ -96,6 +96,19 @@ function deriveBadge(tags) {
   return null;
 }
 
+// Same "only a real merchant tag, never fabricated" rule as deriveBadge
+// above. Tag a product "Men", "Women" or "Unisex" in Shopify Admin (any
+// casing, with or without an apostrophe/s) and it activates the Gender
+// filter and the homepage entry gateway's Men/Women selection - both stay
+// gracefully absent/no-op until at least one product carries one of these.
+function deriveGender(tags) {
+  const lower = tags.map((tag) => tag.toLowerCase());
+  if (lower.some((tag) => tag === 'men' || tag === "men's" || tag === 'mens')) return 'Men';
+  if (lower.some((tag) => tag === 'women' || tag === "women's" || tag === 'womens')) return 'Women';
+  if (lower.includes('unisex')) return 'Unisex';
+  return null;
+}
+
 // Parses a metafield value into a list, defensively - works whether a
 // merchant configures it as a `list.single_line_text_field` (Storefront
 // API returns that as a JSON-encoded array string) or a plain single-line
@@ -180,6 +193,7 @@ export function mapShopifyProduct(node) {
     mood: findTag(tags, MOOD_TAGS),
     intensityTag: findTag(tags, INTENSITY_TAGS),
     badge: deriveBadge(tags),
+    gender: deriveGender(tags),
     tone: deriveTone(node.id),
     price: sizes[0]?.price ?? Number(node.priceRange?.minVariantPrice?.amount ?? 0),
     compareAtPrice: sizes[0]?.compareAtPrice ?? null,

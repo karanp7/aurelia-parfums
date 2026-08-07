@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'rea
 import { useNavigate, useLocation, useSearchParams, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import HeroMedia from './components/HeroMedia.jsx';
+import EntryGateway from './components/EntryGateway.jsx';
 import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
 import Dialog, { DialogClose } from './components/Dialog.jsx';
@@ -34,6 +35,10 @@ const QuizModal = lazy(() => import('./components/QuizModal.jsx'));
 // constants here to match whatever handles you use) to light the rest up.
 const DISCOVERY_SET_HANDLE = 'discovery-set';
 const GIFT_WRAP_HANDLE = 'gift-wrap';
+
+// sessionStorage key backing the entry gateway's "seen it this session"
+// state - see the hasEntered useState below for the full rationale.
+const ENTRY_GATEWAY_KEY = 'aurelia-entered';
 
 // Discovery Set's business model isn't finalized — every purchase entry
 // point (hero CTA, homepage section, quiz result, cart cross-sell) is gated
@@ -208,6 +213,7 @@ function readFilterParams(search) {
     priceBucket: params.get('price') || 'all',
     availabilityOnly: params.get('stock') === '1',
     sizeFilter: params.get('size') || 'All',
+    gender: params.get('gender') || 'All',
     occasion: params.get('occasion') || 'All',
     concentration: params.get('concentration') || 'All',
     newArrivalOnly: params.get('new') === '1',
@@ -226,6 +232,11 @@ function App() {
   const [priceBucket, setPriceBucket] = useState(initialFilters.priceBucket);
   const [availabilityOnly, setAvailabilityOnly] = useState(initialFilters.availabilityOnly);
   const [sizeFilter, setSizeFilter] = useState(initialFilters.sizeFilter);
+  // Gender: real, tag-derived facet (same "Men"/"Women"/"Unisex" tag the
+  // homepage entry gateway's Men/Women boxes also read) - gracefully
+  // hidden by FilterBar/FilterDrawer whenever no product carries the tag,
+  // same rule as Occasion/Concentration below.
+  const [gender, setGender] = useState(initialFilters.gender);
   // Occasion/Concentration: real, metafield/variant-derived facets (same
   // data the Product Detail Page already shows) - gracefully hidden by
   // FilterBar/FilterDrawer whenever the catalog has no products with that
@@ -267,6 +278,14 @@ function App() {
   const [visibleCount, setVisibleCount] = useState(12);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  // The entry gateway (EntryGateway.jsx) is the site's real front door -
+  // shown once per browser session on a fresh visit to "/", never on a
+  // deep link (a shared product URL shouldn't detour through a Men/Women/
+  // Gifts choice). sessionStorage (not localStorage) so it resets on a
+  // fresh browser/new session, matching the agreed behavior, and reads
+  // synchronously on first render so there's no flash of the gateway on
+  // an already-entered return visit within the same session.
+  const [hasEntered, setHasEntered] = useState(() => sessionStorage.getItem(ENTRY_GATEWAY_KEY) === '1');
 
   const searchInputRef = useRef(null);
   const navigate = useNavigate();
@@ -335,7 +354,12 @@ function App() {
   }, [handle, activeProductFromList, productsLoading]);
 
   const activeProduct = activeProductFromList || directProduct;
-  useReveal(Boolean(activeProduct));
+  // Re-scans/re-observes whenever the homepage's [data-reveal] sections
+  // actually (re)mount - true right after either the product page closes
+  // or the entry gateway is passed (both swap the homepage sections in
+  // for the first time that render), same reasoning as the PDP case
+  // alone used to cover before the gateway existed.
+  useReveal(hasEntered && !activeProduct);
   const closeProduct = () => navigate('/');
   const openProduct = (product) => navigate(`/products/${product.handle}`);
 
@@ -344,33 +368,48 @@ function App() {
   }, [activeProduct]);
 
   // Every nav/footer/menu link that jumps to a homepage section (`#collection`,
-  // `#best-sellers`, etc.) assumes those sections are mounted - true on the
-  // homepage, but not on a product page, where they're swapped out entirely
-  // for ProductDetailPage and don't exist in the DOM. `document.getElementById`
-  // then returns null and the link silently does nothing. `goToSection`
-  // covers both cases: if a product page is open, it navigates home first and
-  // remembers the target in a ref; once the homepage sections remount, the
-  // effect below scrolls to it (deferred a frame so the freshly-mounted DOM
-  // has actually painted before `scrollIntoView` measures it).
+  // `#best-sellers`, etc.) assumes those sections are mounted - true once
+  // past both the entry gateway AND off a product page, neither of which
+  // render the homepage sections. `document.getElementById` then returns
+  // null and the link silently does nothing. `goToSection` covers every
+  // case: if a product page is open or the gateway hasn't been passed yet,
+  // it clears whichever of those is blocking the homepage and remembers
+  // the target in a ref; once the homepage sections mount, the effect
+  // below scrolls to it (deferred a frame so the freshly-mounted DOM has
+  // actually painted before `scrollIntoView` measures it).
   const pendingScrollRef = useRef(null);
   const goToSection = (id, options) => {
-    if (activeProduct) {
+    if (activeProduct || !hasEntered) {
       pendingScrollRef.current = { id, ...options };
-      closeProduct();
+      if (activeProduct) closeProduct();
       return;
     }
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
     if (options?.focusSearch) window.requestAnimationFrame(() => searchInputRef.current?.focus());
   };
   useEffect(() => {
-    if (activeProduct || !pendingScrollRef.current) return;
+    if (activeProduct || !hasEntered || !pendingScrollRef.current) return;
     const { id, focusSearch: shouldFocusSearch } = pendingScrollRef.current;
     pendingScrollRef.current = null;
     requestAnimationFrame(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
       if (shouldFocusSearch) searchInputRef.current?.focus();
     });
-  }, [activeProduct]);
+  }, [activeProduct, hasEntered]);
+
+  // The three entry-gateway choices. Men/Women set the real, tag-derived
+  // gender filter (see deriveGender in shopifyProducts.js) and land on the
+  // shop grid; Gifts needs no filter, just a scroll straight to the real
+  // #gifts section already on the homepage. All three mark the gateway
+  // seen for the rest of this browser session and reuse goToSection's
+  // existing defer-until-mounted mechanism rather than a bespoke one.
+  const enterSite = (choice) => {
+    if (choice === 'men') { setGender('Men'); setFamily('All'); goToSection('collection'); }
+    else if (choice === 'women') { setGender('Women'); setFamily('All'); goToSection('collection'); }
+    else if (choice === 'gifts') { goToSection('gifts'); }
+    sessionStorage.setItem(ENTRY_GATEWAY_KEY, '1');
+    setHasEntered(true);
+  };
 
   // Previously only set inside openProduct(), which meant a direct
   // /products/:handle visit (no click-through - a bookmark, a shared link,
@@ -423,10 +462,11 @@ function App() {
   // family above — never a fixed/guessed list.
   const brandOptions = useMemo(() => [...new Set(products.map((product) => product.house))].sort(), [products]);
   const sizeOptions = useMemo(() => [...new Set(products.flatMap((product) => product.sizes.map((size) => size.label)))], [products]);
-  // Occasion/Concentration options: empty whenever no product in the
-  // catalog has that metafield/variant-option set, which is the signal
-  // FilterBar/FilterDrawer use to hide the whole dropdown rather than
-  // show one with nothing real to select.
+  // Gender/Occasion/Concentration options: empty whenever no product in
+  // the catalog has that tag/metafield/variant-option set, which is the
+  // signal FilterBar/FilterDrawer use to hide the whole dropdown rather
+  // than show one with nothing real to select.
+  const genderOptions = useMemo(() => [...new Set(products.map((product) => product.gender).filter(Boolean))].sort(), [products]);
   const occasionOptions = useMemo(() => [...new Set(products.flatMap((product) => product.occasions || []))].sort(), [products]);
   const concentrationOptions = useMemo(() => [...new Set(products.map((product) => findConcentration(product)).filter(Boolean))].sort(), [products]);
 
@@ -455,7 +495,7 @@ function App() {
   // trigger so users know something is applied without opening the drawer.
   const activeFilterCount = [
     family !== 'All', brand !== 'All', priceBucket !== 'all', availabilityOnly, sizeFilter !== 'All',
-    occasion !== 'All', concentration !== 'All', newArrivalOnly, bestSellerOnly
+    gender !== 'All', occasion !== 'All', concentration !== 'All', newArrivalOnly, bestSellerOnly
   ].filter(Boolean).length;
 
   const filtered = useMemo(() => products.filter((product) => {
@@ -469,6 +509,7 @@ function App() {
       .toLowerCase();
     const matchesWishlist = !wishlistFilterOn || wishlist.includes(product.id);
     const matchesBrand = brand === 'All' || product.house === brand;
+    const matchesGender = gender === 'All' || product.gender === gender;
     const matchesOccasion = occasion === 'All' || (product.occasions || []).includes(occasion);
     const matchesConcentration = concentration === 'All' || findConcentration(product) === concentration;
     const matchesNewArrival = !newArrivalOnly || product.badge === 'New';
@@ -479,8 +520,8 @@ function App() {
     return (family === 'All' || product.family === family)
       && searchable.includes(search.toLowerCase())
       && matchesWishlist && matchesBrand && matchesAvailability && matchesSize && matchesPrice
-      && matchesOccasion && matchesConcentration && matchesNewArrival && matchesBestSeller;
-  }), [products, family, search, wishlistFilterOn, wishlist, brand, availabilityOnly, sizeFilter, priceBucket, occasion, concentration, newArrivalOnly, bestSellerOnly]);
+      && matchesGender && matchesOccasion && matchesConcentration && matchesNewArrival && matchesBestSeller;
+  }), [products, family, search, wishlistFilterOn, wishlist, brand, availabilityOnly, sizeFilter, priceBucket, gender, occasion, concentration, newArrivalOnly, bestSellerOnly]);
 
   // Live suggestions as you type, before pressing Enter - real matching
   // products only (name/house/notes, the same fields the search itself
@@ -504,7 +545,7 @@ function App() {
   // Reset pagination whenever the result set's composition changes, so
   // switching filters never leaves the grid stuck deep in a stale "show
   // more" state from a previous, larger result set.
-  useEffect(() => { setVisibleCount(12); }, [family, search, brand, priceBucket, availabilityOnly, sizeFilter, sort, wishlistFilterOn, occasion, concentration, newArrivalOnly, bestSellerOnly]);
+  useEffect(() => { setVisibleCount(12); }, [family, search, brand, priceBucket, availabilityOnly, sizeFilter, sort, wishlistFilterOn, gender, occasion, concentration, newArrivalOnly, bestSellerOnly]);
 
   // Keeps the URL in sync as filters change (replace, not push, so every
   // keystroke/click doesn't spam browser history) - only defaults are
@@ -520,13 +561,14 @@ function App() {
     if (priceBucket !== 'all') params.set('price', priceBucket);
     if (availabilityOnly) params.set('stock', '1');
     if (sizeFilter !== 'All') params.set('size', sizeFilter);
+    if (gender !== 'All') params.set('gender', gender);
     if (occasion !== 'All') params.set('occasion', occasion);
     if (concentration !== 'All') params.set('concentration', concentration);
     if (newArrivalOnly) params.set('new', '1');
     if (bestSellerOnly) params.set('bestseller', '1');
     setSearchParams(params, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [family, sort, brand, priceBucket, availabilityOnly, sizeFilter, occasion, concentration, newArrivalOnly, bestSellerOnly]);
+  }, [family, sort, brand, priceBucket, availabilityOnly, sizeFilter, gender, occasion, concentration, newArrivalOnly, bestSellerOnly]);
 
   const quizMatches = useMemo(() => rankMatches(products, quizAnswers, 3), [products, quizAnswers]);
 
@@ -716,7 +758,7 @@ function App() {
   // (that would reset text the user can still see and is still typing in).
   const clearFilterFacets = () => {
     setFamily('All'); setBrand('All'); setPriceBucket('all'); setAvailabilityOnly(false); setSizeFilter('All');
-    setOccasion('All'); setConcentration('All'); setNewArrivalOnly(false); setBestSellerOnly(false);
+    setGender('All'); setOccasion('All'); setConcentration('All'); setNewArrivalOnly(false); setBestSellerOnly(false);
   };
   const clearFilters = () => { setSearch(''); clearFilterFacets(); };
 
@@ -747,6 +789,14 @@ function App() {
         <p>Set <code>SHOPIFY_STORE_DOMAIN</code> and <code>SHOPIFY_STOREFRONT_ACCESS_TOKEN</code> — in Vercel's Project Settings for production, or in a local <code>.env.local</code> for development (see <code>.env.example</code>) — then reload.</p>
       </main>
     </div>;
+  }
+
+  // The entry gateway only intercepts a fresh session's landing on "/" -
+  // a direct/shared link (a product page, or "/" with a query string
+  // already attached from a bookmark) skips straight to the shop, same as
+  // how most real "enter site" gateways behave.
+  if (!hasEntered && location.pathname === '/') {
+    return <EntryGateway onSelect={enterSite} />;
   }
 
   return <div className="site-shell">
@@ -930,6 +980,7 @@ function App() {
           priceBucket={priceBucket} onPriceBucketChange={setPriceBucket}
           availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
           sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
+          gender={gender} genderOptions={genderOptions} onGenderChange={setGender}
           occasion={occasion} occasionOptions={occasionOptions} onOccasionChange={setOccasion}
           concentration={concentration} concentrationOptions={concentrationOptions} onConcentrationChange={setConcentration}
           newArrivalOnly={newArrivalOnly} onNewArrivalChange={setNewArrivalOnly}
@@ -945,6 +996,7 @@ function App() {
           priceBucket={priceBucket} onPriceBucketChange={setPriceBucket}
           availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
           sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
+          gender={gender} genderOptions={genderOptions} onGenderChange={setGender}
           occasion={occasion} occasionOptions={occasionOptions} onOccasionChange={setOccasion}
           concentration={concentration} concentrationOptions={concentrationOptions} onConcentrationChange={setConcentration}
           newArrivalOnly={newArrivalOnly} onNewArrivalChange={setNewArrivalOnly}

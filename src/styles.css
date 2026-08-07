@@ -114,6 +114,41 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
    hero's own bottom edge into --paper rather than adding a separate
    strip element, so trust-row still starts exactly where it always did. */
 .hero-cinematic::after{content:'';position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(180deg,transparent,var(--paper));pointer-events:none;z-index:1}
+
+/* Entry Gateway: the site's real front door (see App.jsx's hasEntered
+   gating) - a bold, full-bleed editorial moment with no shop chrome
+   (logo only), then three ways in. Deliberately its own class names
+   rather than reusing .hero-cinematic/.hero-copy, so this never risks
+   the shop homepage's own hero. */
+.entry-gateway{position:relative;background:var(--graphite);color:#fff}
+.entry-gateway-header{position:absolute;top:0;left:0;right:0;z-index:3;display:flex;justify-content:center;padding:40px 0}
+.entry-gateway-hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:0 24px;text-align:center}
+.entry-gateway-hero-media{background:radial-gradient(135% 105% at 50% 20%,#332b26 0%,var(--graphite) 55%,#161210 100%)}
+.entry-gateway-hero-copy{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:20px;max-width:720px}
+.entry-gateway-hero-copy .overline{color:rgba(255,255,255,.78)}
+.entry-gateway-hero-copy h1{font:400 clamp(48px,7.5vw,104px)/.95 'Italiana',serif;letter-spacing:-.03em;margin:0}
+.entry-gateway-scrollcue{display:flex;align-items:center;gap:8px;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:rgba(255,255,255,.7);margin-top:10px;animation:gatewayCue 2.4s var(--ease) infinite}
+@keyframes gatewayCue{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+.entry-gateway-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--ink)}
+.gateway-tile{position:relative;aspect-ratio:3/4;overflow:hidden;border:0;padding:0;display:block;width:100%;cursor:pointer}
+.gateway-tile-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s var(--ease),transform .8s var(--ease)}
+.gateway-tile-image.is-loaded{opacity:1}
+.gateway-tile:hover .gateway-tile-image{transform:scale(1.05)}
+.gateway-tile-fallback{background-color:var(--stage)}
+.gateway-tile-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,11,9,0) 45%,rgba(15,11,9,.75) 100%)}
+.gateway-tile-copy{position:absolute;left:0;right:0;bottom:0;padding:28px;display:flex;flex-direction:column;align-items:center;gap:10px;color:#fff}
+.gateway-tile-label{font:400 clamp(26px,3vw,38px) 'Italiana',serif;letter-spacing:-.01em}
+.gateway-tile-cta{display:inline-flex;align-items:center;gap:8px;font-size:10px;text-transform:uppercase;letter-spacing:.14em;border-bottom:1px solid rgba(255,255,255,.55);padding-bottom:3px;transition:.25s var(--ease)}
+.gateway-tile:hover .gateway-tile-cta{border-color:#fff;gap:12px}
+@media(max-width:800px){
+  .entry-gateway-header{padding:26px 0}
+  .entry-gateway-hero{min-height:78vh}
+  .entry-gateway-hero-copy h1{font-size:clamp(38px,11vw,56px)}
+  .entry-gateway-tiles{grid-template-columns:1fr}
+  .gateway-tile{aspect-ratio:4/3}
+}
+
 .trust-row{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}.trust-row div{padding:52px 30px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:9px}.trust-row strong,.trust-row span{display:block}.trust-row svg{color:var(--gold);margin-bottom:4px}.trust-row strong{font:600 12px 'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.06em}
 /* P1 fix (#11): trust-row span was 9px, now 11px. */
 .trust-row span{font-size:12px;line-height:1.5;color:var(--muted);max-width:200px}.discovery-story,.collection,.reviews{padding:var(--space-7) 6vw}.section-intro{max-width:920px}.section-intro h2{font-size:clamp(58px,6vw,88px)}.journey-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);margin-top:70px;border:1px solid var(--line)}.journey-grid article{background:var(--paper);padding:38px;min-height:250px}.journey-grid article>span,.policies article>span{font-size:10px;color:var(--wine);letter-spacing:.16em}.journey-grid h3,.policies h3{font:var(--h-card);margin:50px 0 13px}.journey-grid p,.policies p{font-size:13px;line-height:1.75;color:var(--muted)}.discovery-feature{margin:0 3vw;display:grid;grid-template-columns:1fr 1fr;gap:20px}.discovery-card{border-radius:var(--radius-lg);background:#d9c9b8;overflow:hidden;display:flex;flex-direction:column}.discovery-art{display:grid;place-items:center;position:relative;min-height:300px;background:radial-gradient(circle,rgba(255,255,255,.52),transparent 55%)}.set-box{width:230px;height:300px;background:var(--paper);border:1px solid rgba(23,21,19,.13);box-shadow:0 35px 70px rgba(57,36,26,.18);display:grid;place-items:center;align-content:center;gap:12px;transform:rotate(-4deg)}.set-box span{font:400 38px 'Italiana',serif;letter-spacing:.08em}.set-box small{font-size:10px;letter-spacing:.2em}.vial-row{position:absolute;bottom:40px;display:flex;gap:20px}.vial-row i{width:22px;height:110px;background:linear-gradient(90deg,#fff8,transparent),rgba(125,62,57,.24);border:1px solid rgba(40,30,26,.2);border-radius:6px 6px 10px 10px}.discovery-copy{padding:50px 42px 45px;background:var(--sand);flex:1}.discovery-copy h2{font-size:clamp(34px,3.4vw,46px)}.discovery-copy>p{line-height:1.8;color:var(--muted)}.discovery-copy ul{padding:0;list-style:none;margin:35px 0}.discovery-copy li{padding:14px 0;border-bottom:1px solid var(--line);font-size:11px}.discovery-copy li:before{content:'✓';margin-right:12px;color:var(--wine)}.price-action{display:flex;align-items:center;justify-content:space-between}.price-action>strong{font:400 38px 'Italiana',serif}.scentfinder-card{border-radius:var(--radius-lg);background:var(--graphite);color:#fff;display:flex;align-items:center;overflow:hidden}.scentfinder-copy{padding:50px 42px}.scentfinder-copy h2{font:400 clamp(34px,3.4vw,46px)/1.1 'Italiana',serif;margin:16px 0 20px}.scentfinder-copy>p{color:rgba(255,255,255,.7);line-height:1.8;margin-bottom:26px;max-width:38ch}.collection-head{display:grid;grid-template-columns:1.3fr .7fr;align-items:end;gap:40px}.collection-head h2{font-size:clamp(55px,6vw,86px)}.collection-head>p{max-width:410px;color:var(--muted);line-height:1.8;font-size:12px}

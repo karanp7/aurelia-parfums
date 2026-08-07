@@ -58,3 +58,44 @@ When `video` is set it takes priority over the image sources entirely.
 Should be silent (it renders muted regardless), loop cleanly, and follow
 the same "dark left, subject right" composition as the desktop still so
 the text overlay stays legible.
+
+---
+
+# Entry gateway media
+
+The site's front door (`EntryGateway.jsx`) — shown once per browser
+session before the shop itself. Separate filenames from the hero above
+so the two campaigns can be shot/updated independently. Same fallback
+contract: nothing here yet, so the hero falls back to a neutral dark
+gradient and each of the three tiles falls back to one of the site's
+existing decorative tones, never a broken-image icon.
+
+```
+public/images/campaigns/gateway-hero-desktop.jpg
+public/images/campaigns/gateway-hero-tablet.jpg
+public/images/campaigns/gateway-hero-mobile.jpg
+public/images/campaigns/gateway-women.jpg
+public/images/campaigns/gateway-men.jpg
+public/images/campaigns/gateway-gifts.jpg
+```
+
+## Gateway hero — `gateway-hero-desktop/tablet/mobile.jpg`
+
+- Same crop/composition brief as the shop hero above, but this one is
+  shown **centered full-bleed** behind a centered headline, not a
+  left-aligned one — keep the **center** of the frame calm/uncluttered
+  rather than the left third, and avoid anything that needs to be read
+  directly behind the middle of the frame.
+- No text baked in, no white/studio background, same as every other
+  campaign asset on this site.
+- Desktop ~2400×1200 (2:1), tablet a tighter crop of the same shot,
+  mobile ~1200×1600 portrait.
+
+## Category tiles — `gateway-women.jpg` / `gateway-men.jpg` / `gateway-gifts.jpg`
+
+- **Size:** ~1200×1600px, portrait (shown at `object-fit: cover` in a
+  3:4 box on desktop, 4:3 on mobile where the three stack vertically).
+- Each tile has its own dark scrim gradient along the **bottom** third
+  for the label/CTA sitting there — keep the bottom of the frame darker
+  and less busy than the rest, similar to the mobile hero's safe area.
+- No text baked in.
