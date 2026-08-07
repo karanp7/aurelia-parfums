@@ -286,6 +286,11 @@ function App() {
   // synchronously on first render so there's no flash of the gateway on
   // an already-entered return visit within the same session.
   const [hasEntered, setHasEntered] = useState(() => sessionStorage.getItem(ENTRY_GATEWAY_KEY) === '1');
+  // See enterSite/the effect below - the exact history entry key the
+  // gateway itself was showing on when a real enterSite() call happened
+  // this page load, so backing all the way out to it can be recognized
+  // and turned back into "show the gateway again."
+  const gatewayEntryKeyRef = useRef(null);
 
   const searchInputRef = useRef(null);
   const navigate = useNavigate();
@@ -403,13 +408,59 @@ function App() {
   // #gifts section already on the homepage. All three mark the gateway
   // seen for the rest of this browser session and reuse goToSection's
   // existing defer-until-mounted mechanism rather than a bespoke one.
+  //
+  // Neither goToSection nor setHasEntered on its own touches browser
+  // history - so previously, pressing Back right after choosing Men/Women/
+  // Gifts had nothing to return to (H-06 bug report: "no back option").
+  // `navigate('/?_e=1')` here (a real push, unlike every filter change's
+  // {replace:true}) gives the browser one concrete entry to pop back to -
+  // the throwaway `_e=1` marker forces a genuinely different URL from
+  // wherever the gateway itself already is (navigating to an identical
+  // URL doesn't mint a new history entry). The immediate follow-up
+  // {replace:true} strips it back out of the address bar right away
+  // (replace never creates its own extra entry, just edits the one just
+  // pushed) - Men/Women's own filter-URL-sync effect would clean it up a
+  // moment later anyway once gender/family settle, but Gifts touches no
+  // filter state, so nothing else would ever fire that cleanup for it.
   const enterSite = (choice) => {
+    gatewayEntryKeyRef.current = location.key;
     if (choice === 'men') { setGender('Men'); setFamily('All'); goToSection('collection'); }
     else if (choice === 'women') { setGender('Women'); setFamily('All'); goToSection('collection'); }
     else if (choice === 'gifts') { goToSection('gifts'); }
     sessionStorage.setItem(ENTRY_GATEWAY_KEY, '1');
+    navigate('/?_e=1');
+    navigate('/', { replace: true });
     setHasEntered(true);
   };
+
+  // Pressing Back enough times to land back on the exact entry the
+  // gateway itself was showing on (captured above) means the user has
+  // backed all the way out of the shop to where they made their choice.
+  // gatewayEntryKeyRef only ever gets set by a real enterSite() call this
+  // page load, so this never fires for a repeat visit within the same
+  // session where sessionStorage already skipped the gateway entirely.
+  //
+  // A raw `popstate` listener rather than reacting to `location`/
+  // `hasEntered` in a normal effect: right after enterSite fires, there's
+  // a render where the local hasEntered state has already flipped true
+  // but React Router's own location context hasn't caught up to the new
+  // key yet (the two update on different schedules) - comparing them
+  // reactively in that window produced a false "just popped back" match
+  // and immediately un-entered the shop. Reading the popped entry's own
+  // key straight off the native event sidesteps that race entirely, since
+  // it only ever runs in response to an actual browser back/forward action.
+  useEffect(() => {
+    const onPopState = (event) => {
+      if (gatewayEntryKeyRef.current == null) return;
+      if (event.state?.key === gatewayEntryKeyRef.current && window.location.pathname === '/') {
+        sessionStorage.removeItem(ENTRY_GATEWAY_KEY);
+        gatewayEntryKeyRef.current = null;
+        setHasEntered(false);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   // Previously only set inside openProduct(), which meant a direct
   // /products/:handle visit (no click-through - a bookmark, a shared link,
