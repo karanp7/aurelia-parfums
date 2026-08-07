@@ -16,10 +16,17 @@ const GATEWAY_HERO = {
   mobile: '/images/campaigns/gateway-hero-mobile.jpg'
 };
 
+// Heading/tagline copy is original to Aurelia (matching the site's
+// existing voice - "Choose slowly. Wear confidently." etc.) rather than
+// lifted from any reference moodboard - a shared caption *layout* is
+// fair inspiration, but another brand's actual ad copy isn't Aurelia's
+// to reuse. Easy to swap for real campaign copy later; nothing here is
+// a factual claim the way product data is, so no honesty constraint on
+// wording itself, only on not presenting borrowed copy as original.
 const TILES = [
-  { key: 'women', label: 'Women', cta: 'Shop Women', image: '/images/campaigns/gateway-women.jpg', tone: 'tone-bg-rose' },
-  { key: 'men', label: 'Men', cta: 'Shop Men', image: '/images/campaigns/gateway-men.jpg', tone: 'tone-bg-blue' },
-  { key: 'gifts', label: 'Gifts', cta: 'Shop Gifts', image: '/images/campaigns/gateway-gifts.jpg', tone: 'tone-bg-amber' }
+  { key: 'women', heading: ['Women'], tagline: 'ELEGANT. RADIANT. ENTIRELY YOU.', cta: "Explore Women's", image: '/images/campaigns/gateway-women.jpg', tone: 'tone-bg-rose' },
+  { key: 'men', heading: ['Men'], tagline: 'STRONG. REFINED. QUIETLY CONFIDENT.', cta: "Explore Men's", image: '/images/campaigns/gateway-men.jpg', tone: 'tone-bg-blue' },
+  { key: 'gifts', heading: ['The Perfect', 'Gift'], tagline: 'THOUGHTFULLY CHOSEN. BEAUTIFULLY GIVEN.', cta: 'Explore Gifts', image: '/images/campaigns/gateway-gifts.jpg', tone: 'tone-bg-amber' }
 ];
 
 function GatewayTile({ tile, onSelect }) {
@@ -39,7 +46,9 @@ function GatewayTile({ tile, onSelect }) {
       )}
       <span className="gateway-tile-scrim" aria-hidden="true" />
       <span className="gateway-tile-copy">
-        <span className="gateway-tile-label">{tile.label}</span>
+        <span className="gateway-tile-label">{tile.heading.map((line) => <span key={line}>{line}</span>)}</span>
+        <span className="gateway-tile-rule" aria-hidden="true" />
+        <span className="gateway-tile-tagline">{tile.tagline}</span>
         <span className="gateway-tile-cta">{tile.cta} <Icon name="arrowRight" size={13}/></span>
       </span>
     </button>
