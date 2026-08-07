@@ -38,6 +38,7 @@ export function useStickyOnScroll(offset, containerRef) {
   const ref = useRef(null);
   const naturalTopRef = useRef(null);
   const containerBottomRef = useRef(null);
+  const heightRef = useRef(0);
   const [pinned, setPinned] = useState(false);
   const [rect, setRect] = useState({ height: 0, left: 0, width: 0 });
 
@@ -53,6 +54,7 @@ export function useStickyOnScroll(offset, containerRef) {
       if (!ref.current) return;
       const box = ref.current.getBoundingClientRect();
       naturalTopRef.current = box.top + window.scrollY;
+      heightRef.current = box.height;
       setRect({ height: box.height, left: box.left, width: box.width });
       if (containerRef?.current) {
         containerBottomRef.current = containerRef.current.getBoundingClientRect().bottom + window.scrollY;
@@ -62,13 +64,16 @@ export function useStickyOnScroll(offset, containerRef) {
       if (!pinned) measure();
       if (naturalTopRef.current == null) return;
       const pastTop = window.scrollY + offset >= naturalTopRef.current;
-      // Deliberately doesn't factor the pinned element's own height into
-      // this check (i.e. doesn't require the whole box to fit above the
-      // container's bottom edge) - with a tall box that would leave almost
-      // no room to ever pin. Good enough to fix the actual bug (floating
-      // over unrelated full-width sections below the container) without
-      // being pixel-perfect about the box's trailing edge.
-      const withinContainer = containerBottomRef.current == null || window.scrollY + offset <= containerBottomRef.current;
+      // Factors in the pinned element's own height (via heightRef, frozen
+      // at the same moment as naturalTopRef/containerBottomRef) so the box
+      // unpins once ITS OWN bottom edge - not just its top anchor point -
+      // would scroll past the container's bottom edge. A top-only check
+      // let a ~550-700px-tall purchase box stay fixed for that entire
+      // extra distance after .product-modal had already scrolled past,
+      // floating over the full-width Authenticity section below it -
+      // exactly the bug this bound was meant to prevent, just reintroduced
+      // at a larger scale than the original Phase 3 fix accounted for.
+      const withinContainer = containerBottomRef.current == null || window.scrollY + offset + heightRef.current <= containerBottomRef.current;
       setPinned(pastTop && withinContainer);
     };
     measure();
