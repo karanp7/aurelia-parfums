@@ -44,9 +44,15 @@ export default function FilterBar({
   newArrivalOnly, onNewArrivalChange,
   bestSellerOnly, onBestSellerChange,
   sort, sortOptions, onSortChange,
-  activeFilterCount = 0, onOpenFilters
+  activeFilterCount = 0, onOpenFilters, containerRef
 }) {
-  const { ref: wrapRef, pinned, height: barHeight } = useStickyOnScroll(STICK_OFFSET);
+  // Bounded to the Collection section itself (H-07): previously pinned
+  // unbounded ("fine when the grid was the last thing on the page" - see
+  // useStickyOnScroll's own comment), which stayed harmless while
+  // Collection sat near the bottom. Now that Collection leads the
+  // homepage, unbounded pinning kept the filter bar fixed across Best
+  // Sellers/Mood/Gifts/Policies too - sections it has nothing to do with.
+  const { ref: wrapRef, pinned, height: barHeight } = useStickyOnScroll(STICK_OFFSET, containerRef);
   const [searchFocused, setSearchFocused] = useState(false);
   const showSuggestions = searchFocused && search.trim().length > 0;
 

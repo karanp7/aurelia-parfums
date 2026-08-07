@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useLocation, useSearchParams, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
-import HeroMedia from './components/HeroMedia.jsx';
 import EntryGateway from './components/EntryGateway.jsx';
 import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
@@ -270,8 +269,6 @@ function App() {
   const [giftMessage, setGiftMessage] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupDone, setSignupDone] = useState(false);
-  const [discoveryWaitlistEmail, setDiscoveryWaitlistEmail] = useState('');
-  const [discoveryWaitlistDone, setDiscoveryWaitlistDone] = useState(false);
   const [wishlist, setWishlist] = useState(() => readWishlist());
   const [recentlyViewed, setRecentlyViewed] = useState(() => readRecentlyViewed());
   const [wishlistFilterOn, setWishlistFilterOn] = useState(false);
@@ -293,6 +290,10 @@ function App() {
   const gatewayEntryKeyRef = useRef(null);
 
   const searchInputRef = useRef(null);
+  // Bounds FilterBar's sticky pin to the Collection section itself - see
+  // the containerRef comment in FilterBar.jsx for why this is needed now
+  // that Collection leads the homepage.
+  const collectionSectionRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -630,24 +631,6 @@ function App() {
     return [...sameFamily, ...rest].slice(0, 3);
   }, [activeProduct, products]);
 
-  // Featured Brands: derived from real Shopify vendor values, not a
-  // hardcoded list. Uses `vendorRaw` (null when unset) rather than the
-  // store-name-coalesced `house`, so Aurelia Parfums itself never shows up
-  // as if it were a resold designer brand. Normalizes casing/whitespace
-  // before deduping (free-text field — "Chanel" vs "CHANEL " would
-  // otherwise double-count) and hides below 3 distinct real vendors rather
-  // than rendering an awkward 1-2-tile row.
-  const featuredBrands = useMemo(() => {
-    const seen = new Map();
-    products.forEach((product) => {
-      const trimmed = product.vendorRaw?.trim();
-      if (!trimmed) return;
-      const key = trimmed.toLowerCase();
-      if (!seen.has(key)) seen.set(key, trimmed);
-    });
-    return [...seen.values()];
-  }, [products]);
-
   // Best Sellers: reuses the already-fetched `products` array (no new
   // fetch) — an explicit "Bestseller" tag wins a slot first, the rest fill
   // from the front of the list, which is already real-sales-ordered via
@@ -671,7 +654,6 @@ function App() {
   const shippingRemaining = Math.max(0, shippingThreshold - subtotal);
   const shippingProgress = Math.min(100, (subtotal / shippingThreshold) * 100);
   const giftWrapLine = cart?.lines.find((line) => line.type === 'gift-wrap');
-  const discoveryPriceLabel = discoveryProduct ? money(discoveryProduct.price) : '$18';
 
   async function runCartMutation(mutation) {
     setMutating(true);
@@ -870,8 +852,6 @@ function App() {
         />
         <a href="#best-sellers" onClick={(event) => { event.preventDefault(); goToSection('best-sellers'); }}>Best Sellers</a>
         <button onClick={() => setQuizOpen(true)}>Scent Finder</button>
-        <a href="#featured-brands" onClick={(event) => { event.preventDefault(); goToSection('featured-brands'); }}>Brands</a>
-        <a href="#discovery" onClick={(event) => { event.preventDefault(); goToSection('discovery'); }}>Discovery Sets</a>
         <a href="#gifts" onClick={(event) => { event.preventDefault(); goToSection('gifts'); }}>Gifts</a>
       </nav>
       <div className="nav-actions">
@@ -902,117 +882,12 @@ function App() {
         toggleWishlist={toggleWishlist}
         openProduct={openProduct}
       /> : <>
-      <section className="hero-cinematic">
-        <HeroMedia />
-        <div className="hero-copy">
-          <p className="overline">Find your signature</p>
-          <h1>Authentic Luxury Fragrances.<br/><em>Better Prices.</em></h1>
-          <p className="lede">100% genuine designer fragrances. Yours to experience.</p>
-          <div className="hero-buttons">
-            <Button variant="secondary" className="btn-gold" onClick={() => setQuizOpen(true)}>Find your scent <Icon name="arrowUpRight"/></Button>
-            <Button variant="ghost" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}>Shop best sellers</Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="trust-row" aria-label="Store commitments">
-        <div><Icon name="shield" size={34}/><strong>100% Authentic</strong><span>We source directly from authorized distributors</span></div>
-        <div><Icon name="truck" size={34}/><strong>Free Shipping</strong><span>On orders $100+ within the U.S.</span></div>
-        <div><Icon name="gift" size={34}/><strong>Luxury Gift Packaging</strong><span>Optional gift wrap at checkout</span></div>
-        <div><Icon name="refresh" size={34}/><strong>Easy Returns</strong><span>30-day returns on unopened items</span></div>
-      </section>
-
-      <section id="best-sellers" className="bestsellers-section" data-reveal>
-        <div className="collection-head"><div><p className="overline dark">Best sellers</p><h2>What Aurelia customers reach for first.</h2></div><Button variant="text" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}>View all <Icon name="arrowRight"/></Button></div>
-        {bestSellers.length > 0 && <div className="bestsellers-grid">
-          {bestSellers.map((product) => <ProductCard
-            key={product.id}
-            product={product}
-            mutating={mutating}
-            wishlisted={wishlist.includes(product.id)}
-            onToggleWishlist={toggleWishlist}
-            onOpen={openProduct}
-            onQuickAdd={addBottle}
-          />)}
-        </div>}
-      </section>
-
-      <section id="discovery" className="discovery-story soft-light" data-reveal>
-        <div className="section-intro"><p className="overline dark">The easier way to buy fragrance online</p><h2>Smell it in your life,<br/>not just on a screen.</h2></div>
-        <div className="journey-grid">
-          <article><span>01</span><h3>Tell us what you love</h3><p>Shop for yourself or a gift. Share the moods, notes and intensity that feel right.</p></article>
-          <article><span>02</span><h3>Get matched instantly</h3><p>The Scent Finder recommends real fragrances from the shop based on your answers.</p></article>
-          <article><span>03</span><h3>Shop with confidence</h3><p>Every recommendation links straight to a genuine, authentic bottle you can buy today.</p></article>
-        </div>
-      </section>
-
-      <section className="discovery-feature" data-reveal>
-        <article className="discovery-card">
-          <div className="discovery-art" aria-hidden="true"><div className="set-box"><span>AURELIA</span><small>PERSONAL DISCOVERY SET</small></div><div className="vial-row"><i/><i/><i/></div></div>
-          <div className="discovery-copy">
-            <p className="overline">Coming soon</p>
-            <h2>Three considered matches.<br/>One confident decision.</h2>
-            <p>Sample sets are on the way — three 2 ml sprays so you can try a fragrance at home before committing to a full bottle.</p>
-            {DISCOVERY_COMMERCE_ENABLED ? (
-              <div className="price-action"><strong>{discoveryPriceLabel}</strong><Button onClick={() => setQuizOpen(true)}>Build my set <Icon name="arrowUpRight"/></Button></div>
-            ) : (
-              <form className="waitlist-form" onSubmit={(event) => { event.preventDefault(); if (!discoveryWaitlistEmail.trim()) return; setDiscoveryWaitlistDone(true); setDiscoveryWaitlistEmail(''); }}>
-                <label htmlFor="discovery-waitlist-email">Be first to know when it launches</label>
-                {discoveryWaitlistDone ? <p className="waitlist-done">Thanks — we'll let you know.</p> : <div className="signup-row">
-                  <input id="discovery-waitlist-email" type="email" required value={discoveryWaitlistEmail} onChange={(event) => setDiscoveryWaitlistEmail(event.target.value)} placeholder="you@email.com"/>
-                  <Button variant="secondary" type="submit">Notify me</Button>
-                </div>}
-              </form>
-            )}
-          </div>
-        </article>
-        <article className="scentfinder-card">
-          <div className="scentfinder-copy">
-            <p className="overline">Not sure where to start?</p>
-            <h2>Let our Scent Finder<br/>find your perfect match.</h2>
-            <p>Answer a few quick questions and we'll recommend fragrances just for you.</p>
-            <Button variant="secondary" onClick={() => setQuizOpen(true)}>Take the quiz <Icon name="arrowRight"/></Button>
-          </div>
-        </article>
-      </section>
-
-      <section className="mood-section" data-reveal>
-        <div className="section-intro"><p className="overline dark">Shop by mood</p><h2>Find the fragrance for the moment.</h2></div>
-        <div className="mood-grid">
-          {MOOD_TILES.map((mood) => <button key={mood.label} className={`mood-tile tone-bg-${mood.tone}`} onClick={() => shopByTerm(mood.label)}>
-            <span>{mood.label}</span>
-          </button>)}
-        </div>
-      </section>
-
-      <section id="featured-brands" className="brands-section" data-reveal>
-        {featuredBrands.length >= 3 && <>
-          <div className="section-intro"><p className="overline dark">Featured brands</p><h2>The designer houses we carry.</h2></div>
-          <div className="brands-row">
-            {featuredBrands.map((brand) => <button key={brand} className="brand-wordmark" onClick={() => shopByTerm(brand)}>{brand}</button>)}
-          </div>
-        </>}
-      </section>
-
-      <section id="testimonials" className="testimonials-section" data-reveal>
-        {testimonials.length > 0 && <>
-          <div className="section-intro"><p className="overline dark">In their words</p><h2>What customers are saying.</h2></div>
-          <div className="testimonials-row">
-            {testimonials.map((item) => <blockquote key={item.author}><p>{item.quote}</p><footer>{item.author}</footer></blockquote>)}
-          </div>
-        </>}
-      </section>
-
-      <section id="instagram" className="instagram-section" data-reveal>
-        {instagramPosts.length > 0 && <>
-          <div className="section-intro"><p className="overline dark">Follow along</p><h2>@aureliaparfums</h2></div>
-          <div className="instagram-row">
-            {instagramPosts.map((post) => <a key={post.url} href={post.url} target="_blank" rel="noreferrer"><img src={post.image} alt={post.alt}/></a>)}
-          </div>
-        </>}
-      </section>
-
-      <section id="collection" className="collection" data-reveal>
+      {/* Collection now leads the shop homepage (H-07): the entry gateway
+          already delivers the "hero" moment before this page is ever
+          reached, so a shopper who chose Men/Women on the gateway lands
+          directly on the real, filtered product grid instead of a second
+          marketing homepage first. */}
+      <section id="collection" className="collection collection-lead" data-reveal ref={collectionSectionRef}>
         {firstLoad ? <CollectionHeaderSkeleton /> : <>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <a href="#top">Home</a><span aria-hidden="true">/</span>
@@ -1023,6 +898,7 @@ function App() {
           <CollectionBanner banner={collectionBanner} />
         </>}
         {firstLoad ? <FilterBarSkeleton /> : <FilterBar
+          containerRef={collectionSectionRef}
           searchInputRef={searchInputRef}
           search={search} onSearchChange={setSearch}
           searchSuggestions={searchSuggestions} onSelectSuggestion={openProduct}
@@ -1117,6 +993,55 @@ function App() {
         </div>}
       </section>
 
+      <section className="trust-row" aria-label="Store commitments">
+        <div><Icon name="shield" size={34}/><strong>100% Authentic</strong><span>We source directly from authorized distributors</span></div>
+        <div><Icon name="truck" size={34}/><strong>Free Shipping</strong><span>On orders $100+ within the U.S.</span></div>
+        <div><Icon name="gift" size={34}/><strong>Luxury Gift Packaging</strong><span>Optional gift wrap at checkout</span></div>
+        <div><Icon name="refresh" size={34}/><strong>Easy Returns</strong><span>30-day returns on unopened items</span></div>
+      </section>
+
+      <section id="best-sellers" className="bestsellers-section" data-reveal>
+        <div className="collection-head"><div><p className="overline dark">Best sellers</p><h2>What Aurelia customers reach for first.</h2></div><Button variant="text" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}>View all <Icon name="arrowRight"/></Button></div>
+        {bestSellers.length > 0 && <div className="bestsellers-grid">
+          {bestSellers.map((product) => <ProductCard
+            key={product.id}
+            product={product}
+            mutating={mutating}
+            wishlisted={wishlist.includes(product.id)}
+            onToggleWishlist={toggleWishlist}
+            onOpen={openProduct}
+            onQuickAdd={addBottle}
+          />)}
+        </div>}
+      </section>
+
+      <section className="mood-section" data-reveal>
+        <div className="section-intro"><p className="overline dark">Shop by mood</p><h2>Find the fragrance for the moment.</h2></div>
+        <div className="mood-grid">
+          {MOOD_TILES.map((mood) => <button key={mood.label} className={`mood-tile tone-bg-${mood.tone}`} onClick={() => shopByTerm(mood.label)}>
+            <span>{mood.label}</span>
+          </button>)}
+        </div>
+      </section>
+
+      <section id="testimonials" className="testimonials-section" data-reveal>
+        {testimonials.length > 0 && <>
+          <div className="section-intro"><p className="overline dark">In their words</p><h2>What customers are saying.</h2></div>
+          <div className="testimonials-row">
+            {testimonials.map((item) => <blockquote key={item.author}><p>{item.quote}</p><footer>{item.author}</footer></blockquote>)}
+          </div>
+        </>}
+      </section>
+
+      <section id="instagram" className="instagram-section" data-reveal>
+        {instagramPosts.length > 0 && <>
+          <div className="section-intro"><p className="overline dark">Follow along</p><h2>@aureliaparfums</h2></div>
+          <div className="instagram-row">
+            {instagramPosts.map((post) => <a key={post.url} href={post.url} target="_blank" rel="noreferrer"><img src={post.image} alt={post.alt}/></a>)}
+          </div>
+        </>}
+      </section>
+
       <section id="gifts" className="gift-section" data-reveal>
         <div className="gift-copy"><p className="overline">Fragrance, made easier to give</p><h2>A thoughtful gift<br/>without pretending to know.</h2><p>Choose a personalized discovery set, add a message and let the recipient use the value toward the fragrance they love.</p><div className="gift-points"><span>Complimentary gift note</span><span>Price-hidden receipt</span><span>Optional gift wrap</span><span>Digital gift cards</span></div><Button variant="secondary" onClick={() => { setQuizAnswers({0:'Gift'}); setQuizStep(1); setQuizOpen(true); }}>Find a gift <Icon name="arrowUpRight"/></Button></div>
         <div className="gift-art" aria-hidden="true"><div className="gift-box"><span>AURELIA</span><i/></div></div>
@@ -1133,7 +1058,7 @@ function App() {
 
     <footer className="site-footer">
       <div><Logo className="footer-logo"/><h2>Choose slowly.<br/><em>Wear confidently.</em></h2></div>
-      <div className="footer-links"><a href="#discovery" onClick={(event) => { event.preventDefault(); goToSection('discovery'); }}>Discovery sets</a><a href="#collection" onClick={(event) => { event.preventDefault(); goToSection('collection'); }}>Full bottles</a><a href="#gifts" onClick={(event) => { event.preventDefault(); goToSection('gifts'); }}>Gifts</a><button onClick={() => setQuizOpen(true)}>Scent finder</button><a href="#policies" onClick={(event) => { event.preventDefault(); goToSection('policies'); }}>Shipping &amp; returns</a></div>
+      <div className="footer-links"><a href="#collection" onClick={(event) => { event.preventDefault(); goToSection('collection'); }}>Full bottles</a><a href="#gifts" onClick={(event) => { event.preventDefault(); goToSection('gifts'); }}>Gifts</a><button onClick={() => setQuizOpen(true)}>Scent finder</button><a href="#policies" onClick={(event) => { event.preventDefault(); goToSection('policies'); }}>Shipping &amp; returns</a></div>
       <form className="footer-signup" onSubmit={(event) => { event.preventDefault(); if (!signupEmail.trim()) return; setSignupDone(true); setSignupEmail(''); }}>
         <label htmlFor="footer-email">Exclusive launches, private offers and personalized recommendations</label>
         {signupDone ? <p className="signup-done">Thanks — we'll be in touch.</p> : <div className="signup-row">
@@ -1147,7 +1072,7 @@ function App() {
       </p>
     </footer>
 
-    {menuOpen && <Dialog overlayClassName="menu-overlay" label="Mobile menu" dialogRef={menuDialogRef}><DialogClose onClick={() => setMenuOpen(false)} /><nav><a href="#discovery" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('discovery'); }}>Discovery sets</a><a href="#collection" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('collection'); }}>Shop fragrances</a><a href="#gifts" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('gifts'); }}>Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></Dialog>}
+    {menuOpen && <Dialog overlayClassName="menu-overlay" label="Mobile menu" dialogRef={menuDialogRef}><DialogClose onClick={() => setMenuOpen(false)} /><nav><a href="#collection" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('collection'); }}>Shop fragrances</a><a href="#gifts" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('gifts'); }}>Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></Dialog>}
 
     {quizOpen && <Suspense fallback={null}>
       <QuizModal
