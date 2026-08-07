@@ -213,8 +213,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .tag{background:rgba(255,255,255,.78);backdrop-filter:blur(10px);border-radius:999px;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.12em}
 .tag-shipping{background:var(--sand);color:var(--graphite)}.bottle-wrap{position:absolute;inset:0;display:grid;place-items:center;transition:.6s var(--ease)}.product-image:hover .bottle-wrap{transform:translateY(-10px) scale(1.025)}.product-info{padding:20px 5px 30px}.product-info>p{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted)}.product-info h3{font:var(--h-card);margin:5px 0 10px}.product-info>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:13px;line-height:1.6;color:var(--muted);min-height:42px}.product-info>div:last-child{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-top:18px}.product-info>div:last-child button{border:0;background:none;font-size:10px;text-decoration:underline}
 /* Phase 2, Milestone 2: Best Sellers — reuses ProductCard, own grid density */
-.bestsellers-section{padding:var(--space-7) 6vw}
-.bestsellers-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:var(--space-5)}
+.bestsellers-section{padding:var(--space-7) 6vw;max-width:1760px;margin-inline:auto}
+.bestsellers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,280px));justify-content:center;gap:32px;margin-top:var(--space-6)}
 @media(max-width:1000px){.bestsellers-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:800px){.bestsellers-section{padding:95px 18px}.bestsellers-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:430px){.bestsellers-grid{grid-template-columns:1fr}}
