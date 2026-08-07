@@ -89,7 +89,12 @@ const collectionBanner = null;
 
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
 
-function useReveal() {
+// `key` re-runs the scan/observe whenever the homepage's [data-reveal]
+// sections actually remount - e.g. navigating home <-> a product page
+// unmounts and later remounts them (same App instance, just a ternary),
+// so a mount-only effect would leave the fresh nodes stuck at their
+// initial opacity:0 with no observer watching them.
+function useReveal(key) {
   useEffect(() => {
     const nodes = document.querySelectorAll('[data-reveal]');
     const observer = new IntersectionObserver((entries) => {
@@ -97,7 +102,7 @@ function useReveal() {
     }, { threshold: 0.12 });
     nodes.forEach((node) => observer.observe(node));
     return () => observer.disconnect();
-  }, []);
+  }, [key]);
 }
 
 // P0 fix (#3): shared accessible-dialog behavior — focus moves into the
@@ -266,7 +271,6 @@ function App() {
   const searchInputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  useReveal();
 
   // Sort changes (including the initial mount) refetch straight from
   // Shopify with the matching sortKey/reverse rather than re-sorting
@@ -331,6 +335,7 @@ function App() {
   }, [handle, activeProductFromList, productsLoading]);
 
   const activeProduct = activeProductFromList || directProduct;
+  useReveal(Boolean(activeProduct));
   const closeProduct = () => navigate('/');
   const openProduct = (product) => navigate(`/products/${product.handle}`);
 
