@@ -52,6 +52,16 @@ test('mapShopifyProduct derives mood/intensity only from a matching tag', () => 
   assert.equal(withoutTags.intensityTag, null);
 });
 
+test('mapShopifyProduct derives gender from a plain Men/Women/Unisex tag or this store\'s "Target Gender : value" tag convention', () => {
+  assert.equal(mapShopifyProduct(productNode({ tags: ['Men'] })).gender, 'Men');
+  assert.equal(mapShopifyProduct(productNode({ tags: ["Women's"] })).gender, 'Women');
+  assert.equal(mapShopifyProduct(productNode({ tags: ['Unisex'] })).gender, 'Unisex');
+  assert.equal(mapShopifyProduct(productNode({ tags: ['Target Gender : Male'] })).gender, 'Men');
+  assert.equal(mapShopifyProduct(productNode({ tags: ['target gender: female'] })).gender, 'Women');
+  assert.equal(mapShopifyProduct(productNode({ tags: ['Target Gender:Unisex'] })).gender, 'Unisex');
+  assert.equal(mapShopifyProduct(productNode({ tags: ['random', 'tag'] })).gender, null, 'no matching tag -> no gender, not a guess');
+});
+
 test('mapShopifyProduct treats availableForSale as sold-out-aware, not just a product flag', () => {
   const soldOutVariants = mapShopifyProduct(productNode({
     availableForSale: true,

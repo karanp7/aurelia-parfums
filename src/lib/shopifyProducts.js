@@ -101,11 +101,22 @@ function deriveBadge(tags) {
 // casing, with or without an apostrophe/s) and it activates the Gender
 // filter and the homepage entry gateway's Men/Women selection - both stay
 // gracefully absent/no-op until at least one product carries one of these.
+// Also recognizes this store's actual tag convention, a "Target Gender :
+// Male/Female/Unisex" tag (colon-separated, tolerant of spacing either
+// side of the colon) - confirmed as the real tag text in use here, not
+// guessed.
 function deriveGender(tags) {
-  const lower = tags.map((tag) => tag.toLowerCase());
-  if (lower.some((tag) => tag === 'men' || tag === "men's" || tag === 'mens')) return 'Men';
-  if (lower.some((tag) => tag === 'women' || tag === "women's" || tag === 'womens')) return 'Women';
+  const lower = tags.map((tag) => tag.toLowerCase().trim());
+  if (lower.some((tag) => tag === 'men' || tag === "men's" || tag === 'mens' || tag === 'male')) return 'Men';
+  if (lower.some((tag) => tag === 'women' || tag === "women's" || tag === 'womens' || tag === 'female')) return 'Women';
   if (lower.includes('unisex')) return 'Unisex';
+  const targetGenderTag = lower.find((tag) => tag.startsWith('target gender'));
+  if (targetGenderTag) {
+    const value = targetGenderTag.split(':')[1]?.trim();
+    if (value === 'male') return 'Men';
+    if (value === 'female') return 'Women';
+    if (value === 'unisex') return 'Unisex';
+  }
   return null;
 }
 

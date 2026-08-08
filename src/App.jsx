@@ -546,6 +546,18 @@ function App() {
     });
   }, [activeProduct?.id]);
 
+  // The browser's own native scroll restoration (on by default) remembers
+  // and re-applies each history entry's scroll position on back/forward -
+  // including, in some browsers, racing *after* the scrollTo(0,0) effect
+  // below and silently overriding it right back to wherever the page was
+  // scrolled to when last left. Since this app already owns scroll
+  // position deliberately (this effect, plus goToSection's own explicit
+  // scrollIntoView elsewhere), the browser's default only fights it -
+  // switching to 'manual' once makes this app the sole authority.
+  useEffect(() => {
+    window.history.scrollRestoration = 'manual';
+  }, []);
+
   // Product detail and the Men/Women listing are real pages (not overlays
   // or in-page scroll targets), so they should scroll like one: jump to
   // the top on arrival, the way a real page load would - client-side
