@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'rea
 import { useNavigate, useLocation, useSearchParams, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import EntryGateway from './components/EntryGateway.jsx';
-import CategoryLanding from './components/CategoryLanding.jsx';
+import CategoryListing from './components/CategoryListing.jsx';
 import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
 import Dialog, { DialogClose } from './components/Dialog.jsx';
@@ -360,8 +360,8 @@ function App() {
   const activeProductFromList = handle ? products.find((product) => product.handle === handle) : null;
 
   // Real routes (H-08), same reasoning as /products/:handle above: Men/
-  // Women get their own editorial landing page (CategoryLanding) reached
-  // either from the entry gateway or directly/bookmarked, with working
+  // Women get their own sidebar-filter product listing (CategoryListing)
+  // reached either from the entry gateway or directly/bookmarked, with working
   // Back navigation for free via the browser's own history instead of a
   // same-URL trick like Gifts (which has no dedicated page, just a scroll
   // target on the shop homepage) needs.
@@ -409,28 +409,18 @@ function App() {
   // and the effect wouldn't otherwise re-run).
   //
   // categoryGender is checked *before* !hasEntered deliberately: a direct
-  // deep link to /men already renders CategoryLanding on its very first
+  // deep link to /men already renders CategoryListing on its very first
   // render regardless of hasEntered (the gateway's own early-return only
   // ever applies to '/'), but hasEntered still starts false and only
   // flips true a moment later via the sync effect below. Checking
   // !hasEntered first produced a spurious 'gateway' key on that first
-  // render (even though CategoryLanding, not the gateway, was what
+  // render (even though CategoryListing, not the gateway, was what
   // actually mounted), which changed to the correct category key once
-  // hasEntered caught up.
-  //
-  // The `products.length > 0` suffix on the category key covers a second,
-  // separate gap: unlike the homepage's data-reveal sections (which
-  // always render their own outer shell and just leave the inner grid
-  // empty until data arrives), CategoryLanding's family/occasion/
-  // concentration shortcuts conditionally render the *entire* data-reveal
-  // section only once real product data resolves those options - so on
-  // first mount, with products still [], those sections don't exist in
-  // the DOM at all yet. A key that doesn't change once they do appear
-  // left the very first (and only) scan looking for a section that
-  // wasn't there yet, permanently stuck at opacity:0 (confirmed via a
-  // direct trace: useReveal's one scan found only 2 of the page's
-  // data-reveal sections, missing the family-shortcuts one entirely).
-  useReveal(activeProduct ? 'product' : categoryGender ? `${categoryGender}-${products.length > 0}` : (!hasEntered ? 'gateway' : 'home'));
+  // hasEntered caught up. (CategoryListing itself has no [data-reveal]
+  // sections - it's a utilitarian filter/grid page, not a scroll-reveal
+  // one - so unlike the earlier editorial hub, no products-readiness key
+  // suffix is needed here.)
+  useReveal(activeProduct ? 'product' : categoryGender ? categoryGender : (!hasEntered ? 'gateway' : 'home'));
   const closeProduct = () => navigate('/');
   const openProduct = (product) => navigate(`/products/${product.handle}`);
 
@@ -476,7 +466,7 @@ function App() {
   // The three entry-gateway choices. Men/Women set the real, tag-derived
   // gender filter (see deriveGender in shopifyProducts.js) - applied once
   // the shopper actually reaches the product grid - and land on their own
-  // real CategoryLanding route (H-08); Gifts needs no filter or dedicated
+  // real CategoryListing route (H-08); Gifts needs no filter or dedicated
   // page, just a scroll straight to the real #gifts section already on
   // the shop homepage. All three mark the gateway seen for the rest of
   // this browser session.
@@ -618,6 +608,10 @@ function App() {
     family !== 'All', brand !== 'All', priceBucket !== 'all', availabilityOnly, sizeFilter !== 'All',
     gender !== 'All', occasion !== 'All', concentration !== 'All', newArrivalOnly, bestSellerOnly, onSaleOnly
   ].filter(Boolean).length;
+  // Same count, minus gender - on /men or /women, gender is always set
+  // (it's the page itself, not a filter the shopper applied), so it would
+  // otherwise always show as "1 filter active" with nothing really applied.
+  const categoryActiveFilterCount = activeFilterCount - (gender !== 'All' ? 1 : 0);
 
   const filtered = useMemo(() => products.filter((product) => {
     // Notes (top/heart/base) are real metafield data when a merchant has
@@ -732,25 +726,6 @@ function App() {
   const shopByTerm = (term) => {
     setSearch(term);
     setFamily('All');
-    goToSection('collection');
-  };
-
-  // CategoryLanding's own filter shortcuts (family tabs, New Arrivals/Best
-  // Sellers/On Sale tiles, occasion rail, concentration tiles) all resolve
-  // to the same real filter state already driving the Collection grid -
-  // this just sets whichever facet was clicked (defaulting every other
-  // facet back to "All"/off, like clicking a fresh filter from any other
-  // empty state) and hands off to goToSection, which already knows how to
-  // navigate off a category page and defer the scroll until the grid
-  // exists. `gender` is deliberately untouched - it's already correct for
-  // whichever landing page this was clicked from.
-  const applyCategoryFilter = (overrides = {}) => {
-    setFamily(overrides.family ?? 'All');
-    setOccasion(overrides.occasion ?? 'All');
-    setConcentration(overrides.concentration ?? 'All');
-    setNewArrivalOnly(Boolean(overrides.newArrivalOnly));
-    setBestSellerOnly(Boolean(overrides.bestSellerOnly));
-    setOnSaleOnly(Boolean(overrides.onSaleOnly));
     goToSection('collection');
   };
 
@@ -900,6 +875,14 @@ function App() {
     setGender('All'); setOccasion('All'); setConcentration('All'); setNewArrivalOnly(false); setBestSellerOnly(false); setOnSaleOnly(false);
   };
   const clearFilters = () => { setSearch(''); clearFilterFacets(); };
+  // Category pages (/men, /women) need the same "clear everything" actions
+  // but must never reset gender - that's the page's own identity, set by
+  // the route, not a filter a shopper applied and might want to clear.
+  const clearCategoryFacets = () => {
+    setFamily('All'); setBrand('All'); setPriceBucket('all'); setAvailabilityOnly(false); setSizeFilter('All');
+    setOccasion('All'); setConcentration('All'); setNewArrivalOnly(false); setBestSellerOnly(false); setOnSaleOnly(false);
+  };
+  const clearCategoryFilters = () => { setSearch(''); clearCategoryFacets(); };
 
   const toggleWishlist = (productId) => setWishlist((current) => {
     const next = toggleWishlistId(productId, current);
@@ -988,16 +971,28 @@ function App() {
         wishlist={wishlist}
         toggleWishlist={toggleWishlist}
         openProduct={openProduct}
-      /> : categoryGender ? <CategoryLanding
+      /> : categoryGender ? <CategoryListing
         gender={categoryGender}
-        products={products}
-        moodTiles={MOOD_TILES}
-        onShopAll={() => applyCategoryFilter({})}
-        onFamily={(family) => applyCategoryFilter({ family })}
-        onPromo={(type) => applyCategoryFilter({ [type]: true })}
-        onMood={shopByTerm}
-        onOccasion={(occasion) => applyCategoryFilter({ occasion })}
-        onConcentration={(concentration) => applyCategoryFilter({ concentration })}
+        searchInputRef={searchInputRef}
+        search={search} onSearchChange={setSearch}
+        searchSuggestions={searchSuggestions} onSelectSuggestion={openProduct}
+        family={family} familyOptions={familyOptions} onFamilyChange={setFamily}
+        brand={brand} brandOptions={brandOptions} onBrandChange={setBrand}
+        priceBucket={priceBucket} onPriceBucketChange={setPriceBucket}
+        availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
+        sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
+        occasion={occasion} occasionOptions={occasionOptions} onOccasionChange={setOccasion}
+        concentration={concentration} concentrationOptions={concentrationOptions} onConcentrationChange={setConcentration}
+        newArrivalOnly={newArrivalOnly} onNewArrivalChange={setNewArrivalOnly}
+        bestSellerOnly={bestSellerOnly} onBestSellerChange={setBestSellerOnly}
+        onSaleOnly={onSaleOnly} onOnSaleChange={setOnSaleOnly}
+        sort={sort} sortOptions={Object.entries(SORT_OPTIONS).map(([value, option]) => ({ value, label: option.label }))} onSortChange={setSort}
+        activeFilterCount={categoryActiveFilterCount} onClearFacets={clearCategoryFacets} onClearAll={clearCategoryFilters}
+        filtered={filtered} visibleCount={visibleCount} onShowMore={() => setVisibleCount((count) => count + 12)}
+        productsLoading={productsLoading} productsError={productsError}
+        mutating={mutating} wishlist={wishlist} toggleWishlist={toggleWishlist} openProduct={openProduct} addBottle={addBottle}
+        bestSellers={bestSellers}
+        filterDrawerOpen={filterDrawerOpen} onOpenFilters={() => setFilterDrawerOpen(true)} onCloseFilters={() => setFilterDrawerOpen(false)} filterDrawerDialogRef={filterDrawerDialogRef}
       /> : <>
       {/* Collection now leads the shop homepage (H-07): the entry gateway
           already delivers the "hero" moment before this page is ever

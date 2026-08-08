@@ -112,51 +112,10 @@ whenever it's shot; same filenames, no code changes needed.
 
 ---
 
-# Category landing media (Men / Women)
+# Men / Women pages
 
-`CategoryLanding.jsx` - the editorial page reached from the gateway's
-Men/Women choice, or directly via `/men` `/women`. One hero and up to
-three promo tiles per gender; every other section (Mood, family/occasion/
-concentration shortcuts) is text-and-color only and needs no photography
-at all, since those categories come from live Shopify data and can't be
-pre-named image files.
-
-```
-public/images/campaigns/category-men-desktop.jpg
-public/images/campaigns/category-men-tablet.jpg
-public/images/campaigns/category-men-mobile.jpg
-public/images/campaigns/category-men-new.jpg
-public/images/campaigns/category-men-bestsellers.jpg
-public/images/campaigns/category-men-sale.jpg
-public/images/campaigns/category-women-desktop.jpg
-public/images/campaigns/category-women-tablet.jpg
-public/images/campaigns/category-women-mobile.jpg
-public/images/campaigns/category-women-new.jpg
-public/images/campaigns/category-women-bestsellers.jpg
-public/images/campaigns/category-women-sale.jpg
-```
-
-**Current state:** none of these exist yet - the hero falls back to a
-neutral dark gradient (same as every other HeroMedia use) and each promo
-tile falls back to one of the site's decorative tones, never a broken-
-image icon. The three promo tiles (New Arrivals / Best Sellers / On
-Sale) only render at all when at least one real product for that gender
-actually has the tag/discount - so on a catalog with no Men's items on
-sale yet, that one tile simply won't appear rather than linking to an
-empty grid.
-
-## Category hero — `category-{men,women}-desktop/tablet/mobile.jpg`
-
-- Same brief as the shop hero: subject positioned right, left two-thirds
-  dark/uncluttered for the headline sitting there, no baked-in text, no
-  white/studio background.
-- Desktop ~2400×1200 (2:1), tablet a tighter crop of the same shot,
-  mobile ~1200×1600 portrait.
-
-## Promo tiles — `category-{men,women}-{new,bestsellers,sale}.jpg`
-
-- **Size/ratio:** landscape, roughly 4:3 - three sit side by side on
-  desktop, stack on mobile.
-- Keep the **bottom-left** corner dark/uncluttered - the label ("New
-  Arrivals" / "Best Sellers" / "On Sale") sits there as real HTML over a
-  scrim, not baked into the image.
+`/men` and `/women` (`CategoryListing.jsx`) are a utilitarian sidebar-
+filter product listing, not an editorial page — no hero, no promo tiles,
+no photography slots at all. Every product image on those pages comes
+from the same real Shopify product photos already shown everywhere else
+in the shop (`ProductCard`).
