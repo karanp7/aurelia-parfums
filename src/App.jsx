@@ -546,13 +546,16 @@ function App() {
     });
   }, [activeProduct?.id]);
 
-  // Product detail is now a real page (not an overlay), so it scrolls like
-  // one: jump to the top when navigating to a different product, the way a
-  // real page load would, instead of preserving whatever scroll position
-  // the previous page was at.
+  // Product detail and the Men/Women listing are real pages (not overlays
+  // or in-page scroll targets), so they should scroll like one: jump to
+  // the top on arrival, the way a real page load would - client-side
+  // routing doesn't do this for free, it just swaps content under
+  // whatever scroll position the previous page happened to be at (the
+  // reported bug: clicking "Men" while scrolled down elsewhere landed on
+  // /men still scrolled to that same pixel offset, deep in its sidebar).
   useEffect(() => {
-    if (handle) window.scrollTo(0, 0);
-  }, [handle]);
+    if (handle || categoryGender) window.scrollTo(0, 0);
+  }, [handle, categoryGender]);
 
   // `activeProduct` deliberately dropped from this condition — it used to
   // lock body scroll because the product modal was an overlay on top of a
