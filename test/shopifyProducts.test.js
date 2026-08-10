@@ -52,14 +52,21 @@ test('mapShopifyProduct derives mood/intensity only from a matching tag', () => 
   assert.equal(withoutTags.intensityTag, null);
 });
 
-test('mapShopifyProduct derives gender from a plain Men/Women/Unisex tag or this store\'s "Target Gender : value" tag convention', () => {
+test('mapShopifyProduct derives gender primarily from Shopify\'s Standard Product Taxonomy "Target gender" category metafield', () => {
+  assert.equal(mapShopifyProduct(productNode({ targetGender: { value: '["Male"]' } })).gender, 'Men');
+  assert.equal(mapShopifyProduct(productNode({ targetGender: { value: '["Female"]' } })).gender, 'Women');
+  assert.equal(mapShopifyProduct(productNode({ targetGender: { value: '["Unisex"]' } })).gender, 'Unisex');
+  assert.equal(mapShopifyProduct(productNode({ targetGender: { value: 'Male' } })).gender, 'Men', 'also handles a plain (non-JSON) metafield value');
+});
+
+test('mapShopifyProduct falls back to a plain Men/Women/Unisex tag or a "Target Gender : value" tag when the metafield is unset', () => {
   assert.equal(mapShopifyProduct(productNode({ tags: ['Men'] })).gender, 'Men');
   assert.equal(mapShopifyProduct(productNode({ tags: ["Women's"] })).gender, 'Women');
   assert.equal(mapShopifyProduct(productNode({ tags: ['Unisex'] })).gender, 'Unisex');
   assert.equal(mapShopifyProduct(productNode({ tags: ['Target Gender : Male'] })).gender, 'Men');
   assert.equal(mapShopifyProduct(productNode({ tags: ['target gender: female'] })).gender, 'Women');
   assert.equal(mapShopifyProduct(productNode({ tags: ['Target Gender:Unisex'] })).gender, 'Unisex');
-  assert.equal(mapShopifyProduct(productNode({ tags: ['random', 'tag'] })).gender, null, 'no matching tag -> no gender, not a guess');
+  assert.equal(mapShopifyProduct(productNode({ tags: ['random', 'tag'] })).gender, null, 'no matching tag or metafield -> no gender, not a guess');
 });
 
 test('mapShopifyProduct treats availableForSale as sold-out-aware, not just a product flag', () => {

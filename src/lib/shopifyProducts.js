@@ -40,6 +40,7 @@ const PRODUCT_FIELDS = `
   projection: metafield(namespace: "custom", key: "projection") { value }
   versatility: metafield(namespace: "custom", key: "versatility") { value }
   occasions: metafield(namespace: "custom", key: "occasions") { value }
+  targetGender: metafield(namespace: "shopify", key: "target-gender") { value }
 `;
 
 // Collection page sort options map straight onto Shopify's own
@@ -96,16 +97,21 @@ function deriveBadge(tags) {
   return null;
 }
 
-// Same "only a real merchant tag, never fabricated" rule as deriveBadge
-// above. Tag a product "Men", "Women" or "Unisex" in Shopify Admin (any
-// casing, with or without an apostrophe/s) and it activates the Gender
-// filter and the homepage entry gateway's Men/Women selection - both stay
-// gracefully absent/no-op until at least one product carries one of these.
-// Also recognizes this store's actual tag convention, a "Target Gender :
-// Male/Female/Unisex" tag (colon-separated, tolerant of spacing either
-// side of the colon) - confirmed as the real tag text in use here, not
-// guessed.
-function deriveGender(tags) {
+// Primary source: Shopify's own Standard Product Taxonomy "Target gender"
+// category metafield (namespace "shopify", key "target-gender") - set via
+// the "Category metafields" panel Shopify Admin shows once a product has
+// a matching category, not a custom tag. Confirmed as this store's actual
+// setup (a single-value "Male"/"Female"/"Unisex" pill in that panel), so
+// it's checked first. Falls back to a plain "Men"/"Women"/"Unisex" tag (or
+// a legacy "Target Gender : Male" free-text tag) for any product that
+// only has a tag set - never fabricated either way, both are real
+// merchant-entered values.
+function deriveGender(tags, targetGenderMetafieldValue) {
+  const fromMetafield = parseMetafieldList(targetGenderMetafieldValue)[0]?.toLowerCase();
+  if (fromMetafield === 'male') return 'Men';
+  if (fromMetafield === 'female') return 'Women';
+  if (fromMetafield === 'unisex') return 'Unisex';
+
   const lower = tags.map((tag) => tag.toLowerCase().trim());
   if (lower.some((tag) => tag === 'men' || tag === "men's" || tag === 'mens' || tag === 'male')) return 'Men';
   if (lower.some((tag) => tag === 'women' || tag === "women's" || tag === 'womens' || tag === 'female')) return 'Women';
@@ -204,7 +210,7 @@ export function mapShopifyProduct(node) {
     mood: findTag(tags, MOOD_TAGS),
     intensityTag: findTag(tags, INTENSITY_TAGS),
     badge: deriveBadge(tags),
-    gender: deriveGender(tags),
+    gender: deriveGender(tags, node.targetGender?.value),
     tone: deriveTone(node.id),
     price: sizes[0]?.price ?? Number(node.priceRange?.minVariantPrice?.amount ?? 0),
     compareAtPrice: sizes[0]?.compareAtPrice ?? null,
@@ -242,6 +248,10 @@ export function mapShopifyProduct(node) {
 //     - number (0-5)
 //   custom.occasions
 //     - list of single-line text (or comma-separated single-line text)
+// gender reads shopify.target-gender instead - Shopify's own Standard
+// Product Taxonomy category metafield, set via "Category metafields" on
+// a product's category (not "Add definition" like the custom.* ones
+// above) - value "Male" / "Female" / "Unisex".
 export const PRODUCT_METAFIELD_KEYS = {
   topNotes: 'custom.top_notes',
   heartNotes: 'custom.heart_notes',
@@ -249,7 +259,8 @@ export const PRODUCT_METAFIELD_KEYS = {
   longevity: 'custom.longevity',
   projection: 'custom.projection',
   versatility: 'custom.versatility',
-  occasions: 'custom.occasions'
+  occasions: 'custom.occasions',
+  targetGender: 'shopify.target-gender'
 };
 
 export async function fetchProducts({ first = 24, sortKey = 'BEST_SELLING', reverse = false } = {}) {
