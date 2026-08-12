@@ -146,7 +146,6 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .category-listing-head{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--space-4);flex-wrap:wrap;padding-bottom:var(--space-3);border-bottom:1px solid var(--line)}
 .category-listing-head h1{font:400 clamp(34px,4vw,50px) 'Italiana',serif;letter-spacing:-.02em;margin:0}
 .category-count{color:var(--muted);font-size:.5em;vertical-align:middle;margin-left:4px}
-.category-search{width:min(360px,100%)}
 .category-listing-toolbar{display:flex;align-items:center;gap:16px;padding:22px 0}
 .hide-filters-toggle{border:0;background:none;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);transition:color .2s var(--ease)}
 .hide-filters-toggle:hover{color:var(--ink)}
@@ -213,11 +212,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .filter-bar.is-pinned .filter-bar-inner{padding:16px 6vw;box-shadow:0 4px 20px rgba(0,0,0,.06)}
 .filter-bar-row{display:flex;align-items:center;gap:20px}
 .filter-bar-primary{justify-content:space-between;margin-bottom:16px}
-.filter-bar-primary label{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--ink);padding:10px 0;width:min(360px,100%)}
-.filter-bar-primary input{border:0;background:transparent;width:100%;font-size:12px}
-.filter-bar-primary input:focus{outline:none}
-.filter-bar-primary input:focus-visible{outline:2px solid var(--wine);outline-offset:3px;border-radius:2px}
-.search-field{position:relative}
+/* Was scoped to `.filter-bar-primary label`/`input`, so CategoryListing's
+   reuse of .search-field (outside a .filter-bar-primary ancestor) never
+   picked it up and fell back to the browser's default ~20-character input
+   width instead of filling its container - the reported "search bar is
+   cut off". Generalized onto .search-field itself, the class both contexts
+   actually share. */
+.search-field{position:relative;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--ink);padding:10px 0;width:min(360px,100%)}
+.search-field input{border:0;background:transparent;width:100%;font-size:12px}
+.search-field input:focus{outline:none}
+.search-field input:focus-visible{outline:2px solid var(--wine);outline-offset:3px;border-radius:2px}
 /* Live suggestions - Part 3: real matching products only (searchSuggestions
    in App.jsx), styled like the existing .filter-dropdown-menu rather than
    inventing a second dropdown visual language. */
@@ -233,9 +237,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .discovery-chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 /* Dropdown "active" state (Dropdown.jsx's isActive) - a filter with a real
    value applied reads as visually on, matching the discovery chips above
-   instead of looking identical to an untouched dropdown. */
-.filter-dropdown--active>button{border-color:var(--ink);background:var(--ink);color:#fff}
-.filter-dropdown--active>button .filter-dropdown-label{color:rgba(255,255,255,.65)}
+   instead of looking identical to an untouched dropdown.
+   Compound selector (.filter-dropdown.filter-dropdown--active, not just
+   .filter-dropdown--active) deliberately: the base .filter-dropdown>button
+   rule below has equal specificity and comes later in source order, so a
+   single-class selector here lost the background/border-color override to
+   it (a real, shipped bug - Sort is *always* "active" since its value is
+   never 'All', so its button rendered white text with no dark fill behind
+   it, nearly invisible against the page). Two classes on one compound
+   selector outranks the single-class rule regardless of source order. */
+.filter-dropdown.filter-dropdown--active>button{border-color:var(--ink);background:var(--ink);color:#fff}
+.filter-dropdown.filter-dropdown--active>button .filter-dropdown-label{color:rgba(255,255,255,.65)}
 .filter-bar-facets{flex-wrap:wrap;gap:10px}
 .filter-bar-soon{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto;padding-left:16px;border-left:1px solid var(--line)}
 .filter-drawer-trigger{display:none;align-items:center;gap:8px;border:1px solid var(--line);background:transparent;border-radius:999px;padding:10px 16px;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
