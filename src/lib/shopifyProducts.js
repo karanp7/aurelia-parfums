@@ -40,7 +40,26 @@ const PRODUCT_FIELDS = `
   projection: metafield(namespace: "custom", key: "projection") { value }
   versatility: metafield(namespace: "custom", key: "versatility") { value }
   occasions: metafield(namespace: "custom", key: "occasions") { value }
-  targetGender: metafield(namespace: "shopify", key: "target-gender") { value }
+  // Unlike the plain-text metafields above, Shopify's standard "Target
+  // gender" category metafield is a metaobject reference (its entries -
+  // Male/Female/Unisex - are metaobjects, not literal text: confirmed via
+  // Shopify Admin, Settings > Custom data > Metaobjects > "Target
+  // gender"). A plain { value } only returns the metaobject's raw
+  // GID/reference id, not "Male" - reference/references walks through to
+  // the actual metaobject and its fields, covering both the single- and
+  // list-reference configurations since only one of the two is ever
+  // populated for a given metafield.
+  targetGender: metafield(namespace: "shopify", key: "target-gender") {
+    value
+    reference {
+      ... on Metaobject { handle fields { key value } }
+    }
+    references(first: 5) {
+      nodes {
+        ... on Metaobject { handle fields { key value } }
+      }
+    }
+  }
 `;
 
 // Collection page sort options map straight onto Shopify's own
@@ -97,20 +116,44 @@ function deriveBadge(tags) {
   return null;
 }
 
+// The "Target gender" metaobject's entries (confirmed via Shopify Admin:
+// Content > Metaobjects > Target gender -> Gender/Male/Female rows) - the
+// exact field key Shopify uses internally for the entry's own display
+// text isn't documented anywhere reachable, so rather than bet on one
+// guessed key name, every field's value AND the metaobject's own handle
+// are scanned for a literal "male"/"female"/"unisex" match - whichever
+// key Shopify actually used, one of these is virtually certain to carry
+// that word given what Admin visibly shows for these three entries.
+function extractMetaobjectGenderWord(metaobject) {
+  if (!metaobject) return null;
+  const candidates = [metaobject.handle, ...(metaobject.fields || []).map((field) => field.value)]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase().trim());
+  return candidates.find((word) => word === 'male' || word === 'female' || word === 'unisex') || null;
+}
+
 // Primary source: Shopify's own Standard Product Taxonomy "Target gender"
 // category metafield (namespace "shopify", key "target-gender") - set via
 // the "Category metafields" panel Shopify Admin shows once a product has
 // a matching category, not a custom tag. Confirmed as this store's actual
-// setup (a single-value "Male"/"Female"/"Unisex" pill in that panel), so
-// it's checked first. Falls back to a plain "Men"/"Women"/"Unisex" tag (or
-// a legacy "Target Gender : Male" free-text tag) for any product that
-// only has a tag set - never fabricated either way, both are real
-// merchant-entered values.
-function deriveGender(tags, targetGenderMetafieldValue) {
-  const fromMetafield = parseMetafieldList(targetGenderMetafieldValue)[0]?.toLowerCase();
-  if (fromMetafield === 'male') return 'Men';
-  if (fromMetafield === 'female') return 'Women';
-  if (fromMetafield === 'unisex') return 'Unisex';
+// setup - a metaobject reference (Male/Female/Unisex are metaobject
+// entries, not plain text), so it's checked first. Falls back to a plain
+// "Men"/"Women"/"Unisex" tag (or a legacy "Target Gender : Male" free-text
+// tag) for any product that only has a tag set - never fabricated either
+// way, all are real merchant-entered values.
+function deriveGender(tags, targetGenderMetafield) {
+  const metaobject = targetGenderMetafield?.reference || targetGenderMetafield?.references?.nodes?.[0];
+  const fromMetaobject = extractMetaobjectGenderWord(metaobject);
+  if (fromMetaobject === 'male') return 'Men';
+  if (fromMetaobject === 'female') return 'Women';
+  if (fromMetaobject === 'unisex') return 'Unisex';
+
+  // Covers the (less likely, but cheap to also support) case of a plain
+  // text metafield value rather than a metaobject reference.
+  const fromPlainValue = parseMetafieldList(targetGenderMetafield?.value)[0]?.toLowerCase();
+  if (fromPlainValue === 'male') return 'Men';
+  if (fromPlainValue === 'female') return 'Women';
+  if (fromPlainValue === 'unisex') return 'Unisex';
 
   const lower = tags.map((tag) => tag.toLowerCase().trim());
   if (lower.some((tag) => tag === 'men' || tag === "men's" || tag === 'mens' || tag === 'male')) return 'Men';
@@ -210,7 +253,7 @@ export function mapShopifyProduct(node) {
     mood: findTag(tags, MOOD_TAGS),
     intensityTag: findTag(tags, INTENSITY_TAGS),
     badge: deriveBadge(tags),
-    gender: deriveGender(tags, node.targetGender?.value),
+    gender: deriveGender(tags, node.targetGender),
     tone: deriveTone(node.id),
     price: sizes[0]?.price ?? Number(node.priceRange?.minVariantPrice?.amount ?? 0),
     compareAtPrice: sizes[0]?.compareAtPrice ?? null,
@@ -251,7 +294,8 @@ export function mapShopifyProduct(node) {
 // gender reads shopify.target-gender instead - Shopify's own Standard
 // Product Taxonomy category metafield, set via "Category metafields" on
 // a product's category (not "Add definition" like the custom.* ones
-// above) - value "Male" / "Female" / "Unisex".
+// above) - a metaobject reference to one of the Male/Female/Unisex
+// entries under Content > Metaobjects > Target gender, not plain text.
 export const PRODUCT_METAFIELD_KEYS = {
   topNotes: 'custom.top_notes',
   heartNotes: 'custom.heart_notes',

@@ -52,11 +52,19 @@ test('mapShopifyProduct derives mood/intensity only from a matching tag', () => 
   assert.equal(withoutTags.intensityTag, null);
 });
 
-test('mapShopifyProduct derives gender primarily from Shopify\'s Standard Product Taxonomy "Target gender" category metafield', () => {
-  assert.equal(mapShopifyProduct(productNode({ targetGender: { value: '["Male"]' } })).gender, 'Men');
+test('mapShopifyProduct derives gender from Shopify\'s "Target gender" metaobject reference (single reference, via .reference)', () => {
+  assert.equal(mapShopifyProduct(productNode({ targetGender: { reference: { handle: 'male', fields: [] } } })).gender, 'Men', 'matches via the metaobject handle');
+  assert.equal(mapShopifyProduct(productNode({ targetGender: { reference: { handle: 'entry-9f2', fields: [{ key: 'name', value: 'Female' }] } } })).gender, 'Women', 'matches via a field value when the handle itself is opaque');
+  assert.equal(mapShopifyProduct(productNode({ targetGender: { reference: { handle: 'gender', fields: [{ key: 'base_target_gender', value: 'Unisex' }] } } })).gender, 'Unisex');
+});
+
+test('mapShopifyProduct derives gender from a list-type "Target gender" metaobject reference (via .references)', () => {
+  assert.equal(mapShopifyProduct(productNode({ targetGender: { references: { nodes: [{ handle: 'male', fields: [] }] } } })).gender, 'Men');
+});
+
+test('mapShopifyProduct falls back to a plain (non-metaobject) metafield value', () => {
+  assert.equal(mapShopifyProduct(productNode({ targetGender: { value: 'Male' } })).gender, 'Men');
   assert.equal(mapShopifyProduct(productNode({ targetGender: { value: '["Female"]' } })).gender, 'Women');
-  assert.equal(mapShopifyProduct(productNode({ targetGender: { value: '["Unisex"]' } })).gender, 'Unisex');
-  assert.equal(mapShopifyProduct(productNode({ targetGender: { value: 'Male' } })).gender, 'Men', 'also handles a plain (non-JSON) metafield value');
 });
 
 test('mapShopifyProduct falls back to a plain Men/Women/Unisex tag or a "Target Gender : value" tag when the metafield is unset', () => {
