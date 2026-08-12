@@ -40,15 +40,15 @@ const PRODUCT_FIELDS = `
   projection: metafield(namespace: "custom", key: "projection") { value }
   versatility: metafield(namespace: "custom", key: "versatility") { value }
   occasions: metafield(namespace: "custom", key: "occasions") { value }
-  // Unlike the plain-text metafields above, Shopify's standard "Target
-  // gender" category metafield is a metaobject reference (its entries -
-  // Male/Female/Unisex - are metaobjects, not literal text: confirmed via
-  // Shopify Admin, Settings > Custom data > Metaobjects > "Target
-  // gender"). A plain { value } only returns the metaobject's raw
-  // GID/reference id, not "Male" - reference/references walks through to
-  // the actual metaobject and its fields, covering both the single- and
-  // list-reference configurations since only one of the two is ever
-  // populated for a given metafield.
+  # Unlike the plain-text metafields above, Shopify's standard "Target
+  # gender" category metafield is a metaobject reference (its entries -
+  # Male/Female/Unisex - are metaobjects, not literal text: confirmed via
+  # Shopify Admin, Settings > Custom data > Metaobjects > "Target
+  # gender"). A plain { value } only returns the metaobject's raw
+  # GID/reference id, not "Male" - reference/references walks through to
+  # the actual metaobject and its fields, covering both the single- and
+  # list-reference configurations since only one of the two is ever
+  # populated for a given metafield.
   targetGender: metafield(namespace: "shopify", key: "target-gender") {
     value
     reference {
