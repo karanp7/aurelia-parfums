@@ -151,7 +151,7 @@ function useDialogA11y(isOpen, onClose) {
 // click outside both close it, matching the spirit of useDialogA11y above
 // without the full focus-trap machinery a real modal needs (a dropdown menu
 // is dismissable, not modal).
-function ShopDropdown({ open, onToggle, onClose, onShopNew, onGoToSection, onGoToCategory }) {
+function ShopDropdown({ open, onToggle, onClose, onShopNew, onGoToSection, onGoToAllFragrances, onGoToCategory }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -170,7 +170,7 @@ function ShopDropdown({ open, onToggle, onClose, onShopNew, onGoToSection, onGoT
     <div className="shop-dropdown" ref={ref}>
       <button aria-haspopup="true" aria-expanded={open} onClick={onToggle}>Shop <Icon name="chevronDown"/></button>
       {open && <div className="shop-dropdown-menu" role="menu">
-        <a role="menuitem" href="#collection" onClick={(event) => { event.preventDefault(); onGoToSection('collection'); onClose(); }}>All Fragrances</a>
+        <a role="menuitem" href="#collection" onClick={(event) => { event.preventDefault(); onGoToAllFragrances(); onClose(); }}>All Fragrances</a>
         <a role="menuitem" href="/men" onClick={(event) => { event.preventDefault(); onGoToCategory('men'); onClose(); }}>Men</a>
         <a role="menuitem" href="/women" onClick={(event) => { event.preventDefault(); onGoToCategory('women'); onClose(); }}>Women</a>
         <a role="menuitem" href="#best-sellers" onClick={(event) => { event.preventDefault(); onGoToSection('best-sellers'); onClose(); }}>Best Sellers</a>
@@ -865,6 +865,16 @@ function App() {
     return products.filter((product) => !cartHandles.has(product.handle) && cartFamilies.has(product.family)).slice(0, 3);
   }, [cart, products]);
 
+  // "All Fragrances" (Shop dropdown, footer "Full bottles", mobile menu
+  // "Shop fragrances") means exactly that - the whole catalog, no gender
+  // pre-filter - but `gender` is real, persistent state, forced to Men/
+  // Women by the categoryGender sync effect while on /men or /women, and
+  // plain goToSection('collection') alone doesn't touch it. Left alone, a
+  // shopper leaving /men this way still saw only Men's products on a
+  // section literally labeled "All Fragrances". Only gender resets here -
+  // any other filter a shopper deliberately set stays as they left it.
+  const goToAllFragrances = () => { setGender('All'); goToSection('collection'); };
+
   const focusSearch = () => goToSection('collection', { focusSearch: true });
   // Split so the mobile filter drawer's "Clear all" can reset just the
   // filter facets without also wiping the search box it doesn't contain
@@ -937,6 +947,7 @@ function App() {
           onClose={() => setShopMenuOpen(false)}
           onShopNew={() => { shopByTerm('New'); setShopMenuOpen(false); }}
           onGoToSection={goToSection}
+          onGoToAllFragrances={goToAllFragrances}
           onGoToCategory={(choice) => navigate(`/${choice}`)}
         />
         <a href="#best-sellers" onClick={(event) => { event.preventDefault(); goToSection('best-sellers'); }}>Best Sellers</a>
@@ -1085,7 +1096,7 @@ function App() {
 
     <footer className="site-footer">
       <div><Logo className="footer-logo"/><h2>Choose slowly.<br/><em>Wear confidently.</em></h2></div>
-      <div className="footer-links"><a href="#collection" onClick={(event) => { event.preventDefault(); goToSection('collection'); }}>Full bottles</a><a href="#gifts" onClick={(event) => { event.preventDefault(); goToSection('gifts'); }}>Gifts</a><button onClick={() => setQuizOpen(true)}>Scent finder</button><a href="#policies" onClick={(event) => { event.preventDefault(); goToSection('policies'); }}>Shipping &amp; returns</a></div>
+      <div className="footer-links"><a href="#collection" onClick={(event) => { event.preventDefault(); goToAllFragrances(); }}>Full bottles</a><a href="#gifts" onClick={(event) => { event.preventDefault(); goToSection('gifts'); }}>Gifts</a><button onClick={() => setQuizOpen(true)}>Scent finder</button><a href="#policies" onClick={(event) => { event.preventDefault(); goToSection('policies'); }}>Shipping &amp; returns</a></div>
       <form className="footer-signup" onSubmit={(event) => { event.preventDefault(); if (!signupEmail.trim()) return; setSignupDone(true); setSignupEmail(''); }}>
         <label htmlFor="footer-email">Exclusive launches, private offers and personalized recommendations</label>
         {signupDone ? <p className="signup-done">Thanks — we'll be in touch.</p> : <div className="signup-row">
@@ -1099,7 +1110,7 @@ function App() {
       </p>
     </footer>
 
-    {menuOpen && <Dialog overlayClassName="menu-overlay" label="Mobile menu" dialogRef={menuDialogRef}><DialogClose onClick={() => setMenuOpen(false)} /><nav><a href="#collection" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('collection'); }}>Shop fragrances</a><a href="#gifts" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('gifts'); }}>Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></Dialog>}
+    {menuOpen && <Dialog overlayClassName="menu-overlay" label="Mobile menu" dialogRef={menuDialogRef}><DialogClose onClick={() => setMenuOpen(false)} /><nav><a href="#collection" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToAllFragrances(); }}>Shop fragrances</a><a href="#gifts" onClick={(event) => { event.preventDefault(); setMenuOpen(false); goToSection('gifts'); }}>Gifts</a><button onClick={() => { setMenuOpen(false); setQuizOpen(true); }}>Find your scent</button></nav></Dialog>}
 
     {quizOpen && <Suspense fallback={null}>
       <QuizModal
