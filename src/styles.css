@@ -318,13 +318,6 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .icon-btn.active{color:var(--champagne)}
 @media(max-width:800px){.announcement-bar span:not(:first-child){display:none}}
 
-/* Milestone 6: Shop by Mood (static tiles, reuses the existing search/filter) */
-.mood-section{padding:var(--space-7) 6vw}
-.mood-grid{display:flex;flex-wrap:wrap;gap:var(--space-4);margin-top:var(--space-5)}
-.mood-tile{width:170px;height:170px;border-radius:50%;border:0;display:grid;place-items:center;text-align:center;padding:0 20px;transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
-.mood-tile:hover{transform:translateY(-4px);box-shadow:var(--shadow-soft)}
-.mood-tile span{font:400 18px 'Italiana',serif;color:var(--ink)}
-
 .testimonials-section{padding:0 6vw}
 .testimonials-section .section-intro{padding-top:var(--space-6)}
 .testimonials-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:var(--space-5) 0 var(--space-6)}

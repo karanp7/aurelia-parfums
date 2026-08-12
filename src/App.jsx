@@ -6,14 +6,11 @@ import CategoryListing from './components/CategoryListing.jsx';
 import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
 import Dialog, { DialogClose } from './components/Dialog.jsx';
-import LoadingSkeleton, { CollectionHeaderSkeleton, FilterBarSkeleton } from './components/LoadingSkeleton.jsx';
-import CollectionBanner from './components/CollectionBanner.jsx';
 import EmptyState from './components/EmptyState.jsx';
 import ProductCard from './components/ProductCard.jsx';
 import ProductDetailPage from './components/ProductDetailPage.jsx';
 import Icon from './components/Icon.jsx';
-import FilterBar, { PRICE_BUCKETS } from './components/FilterBar.jsx';
-import FilterDrawer from './components/FilterDrawer.jsx';
+import { PRICE_BUCKETS } from './components/FilterBar.jsx';
 import { isShopifyConfigured } from './lib/shopify.js';
 import { fetchProducts, fetchProductByHandle, findConcentration } from './lib/shopifyProducts.js';
 import {
@@ -68,15 +65,6 @@ const SORT_OPTIONS = {
   alphabetical: { label: 'Alphabetical (A–Z)', sortKey: 'TITLE', reverse: false }
 };
 
-const MOOD_TILES = [
-  { label: 'Date Night', tone: 'plum' },
-  { label: 'Everyday', tone: 'cream' },
-  { label: 'Office', tone: 'blue' },
-  { label: 'Summer', tone: 'amber' },
-  { label: 'Winter', tone: 'rose' },
-  { label: 'Special Occasions', tone: 'red' }
-];
-
 // Structural shells only — no real reviews app or Instagram feed is
 // connected yet, so these stay empty until real content exists rather than
 // shipping fabricated quotes or lifestyle photography. The wrapper section
@@ -84,13 +72,6 @@ const MOOD_TILES = [
 // Brands) so useReveal's one-time querySelectorAll finds it.
 const testimonials = [];
 const instagramPosts = [];
-// Same reasoning: no real Shopify Collection resource is queried
-// anywhere in this app (the Collection page filters the full product
-// list client-side), so there's no live seasonal/designer-spotlight
-// content to show yet. CollectionBanner itself renders nothing when this
-// is null - see that component for the real data shape once a Collection
-// query exists.
-const collectionBanner = null;
 
 const money = (value) => `$${Number(value).toFixed(2).replace('.00', '')}`;
 
@@ -299,10 +280,6 @@ function App() {
   const gatewayEntryKeyRef = useRef(null);
 
   const searchInputRef = useRef(null);
-  // Bounds FilterBar's sticky pin to the Collection section itself - see
-  // the containerRef comment in FilterBar.jsx for why this is needed now
-  // that Collection leads the homepage.
-  const collectionSectionRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -603,18 +580,6 @@ function App() {
     () => recentlyViewed.map((id) => products.find((product) => product.id === id)).filter(Boolean),
     [recentlyViewed, products]
   );
-
-  // Real, not fabricated: driven by the actual `family` filter (Shopify
-  // productType) rather than inventing a separate page per marketing
-  // category — "Woody Fragrances" only ever appears if products in that
-  // real family exist in the catalog.
-  const collectionHeading = family === 'All' ? 'All Fragrances' : `${family} Fragrances`;
-
-  // Only the very first fetch has nothing real to show for the header/filter
-  // bar (their content - family/brand/size options - is itself derived from
-  // `products`). A later sort-triggered refetch keeps them visible and only
-  // re-skeletons the grid, so re-sorting doesn't flash the whole section.
-  const firstLoad = productsLoading && products.length === 0;
 
   // Real count of active filters (excludes search, which has its own
   // always-visible input) - shown as a badge on the mobile "Filters"
@@ -1006,7 +971,7 @@ function App() {
         toggleWishlist={toggleWishlist}
         openProduct={openProduct}
       /> : categoryGender ? <CategoryListing
-        gender={categoryGender}
+        pageGender={categoryGender}
         searchInputRef={searchInputRef}
         search={search} onSearchChange={setSearch}
         searchSuggestions={searchSuggestions} onSelectSuggestion={openProduct}
@@ -1032,19 +997,13 @@ function App() {
           already delivers the "hero" moment before this page is ever
           reached, so a shopper who chose Men/Women on the gateway lands
           directly on the real, filtered product grid instead of a second
-          marketing homepage first. */}
-      <section id="collection" className="collection collection-lead" data-reveal ref={collectionSectionRef}>
-        {firstLoad ? <CollectionHeaderSkeleton /> : <>
-          <nav className="breadcrumb" aria-label="Breadcrumb">
-            <a href="#top">Home</a><span aria-hidden="true">/</span>
-            <a href="#collection">Shop</a><span aria-hidden="true">/</span>
-            <span aria-current="page">{collectionHeading}</span>
-          </nav>
-          <div className="collection-head"><div><p className="overline dark">{family === 'All' ? 'Full bottles' : family}</p><h2>{collectionHeading}</h2></div><p>Discover authentic designer fragrances at exceptional prices.</p></div>
-          <CollectionBanner banner={collectionBanner} />
-        </>}
-        {firstLoad ? <FilterBarSkeleton /> : <FilterBar
-          containerRef={collectionSectionRef}
+          marketing homepage first. Same CategoryListing component /men
+          /women use (H-10) - pageGender omitted here, so Gender becomes a
+          real sidebar facet like any other instead of the page's fixed
+          identity, and the heading reads "All Fragrances" instead of
+          "{X}'s Fragrances". */}
+      <section id="collection">
+        <CategoryListing
           searchInputRef={searchInputRef}
           search={search} onSearchChange={setSearch}
           searchSuggestions={searchSuggestions} onSelectSuggestion={openProduct}
@@ -1060,85 +1019,14 @@ function App() {
           bestSellerOnly={bestSellerOnly} onBestSellerChange={setBestSellerOnly}
           onSaleOnly={onSaleOnly} onOnSaleChange={setOnSaleOnly}
           sort={sort} sortOptions={Object.entries(SORT_OPTIONS).map(([value, option]) => ({ value, label: option.label }))} onSortChange={setSort}
-          activeFilterCount={activeFilterCount} onOpenFilters={() => setFilterDrawerOpen(true)}
-        />}
-        {filterDrawerOpen && <FilterDrawer
-          dialogRef={filterDrawerDialogRef}
-          onClose={() => setFilterDrawerOpen(false)}
-          family={family} familyOptions={familyOptions} onFamilyChange={setFamily}
-          brand={brand} brandOptions={brandOptions} onBrandChange={setBrand}
-          priceBucket={priceBucket} onPriceBucketChange={setPriceBucket}
-          availabilityOnly={availabilityOnly} onAvailabilityChange={setAvailabilityOnly}
-          sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={setSizeFilter}
-          gender={gender} genderOptions={genderOptions} onGenderChange={setGender}
-          occasion={occasion} occasionOptions={occasionOptions} onOccasionChange={setOccasion}
-          concentration={concentration} concentrationOptions={concentrationOptions} onConcentrationChange={setConcentration}
-          newArrivalOnly={newArrivalOnly} onNewArrivalChange={setNewArrivalOnly}
-          bestSellerOnly={bestSellerOnly} onBestSellerChange={setBestSellerOnly}
-          onSaleOnly={onSaleOnly} onOnSaleChange={setOnSaleOnly}
-          onClear={clearFilterFacets}
-          resultCount={filtered.length}
-        />}
-        {productsLoading ? <LoadingSkeleton count={8} />
-          : productsError ? <EmptyState title="Couldn't load the catalog." description={productsError} />
-          : filtered.length ? <>
-          <div className="product-grid">
-          {filtered.slice(0, visibleCount).map((product) => <ProductCard
-            key={product.id}
-            product={product}
-            mutating={mutating}
-            wishlisted={wishlist.includes(product.id)}
-            onToggleWishlist={toggleWishlist}
-            onOpen={openProduct}
-            onQuickAdd={addBottle}
-          />)}
-          </div>
-          {visibleCount < filtered.length && <div className="show-more-row">
-            <Button variant="secondary" onClick={() => setVisibleCount((count) => count + 12)}>Show more ({filtered.length - visibleCount} remaining)</Button>
-          </div>}
-        </> : wishlistFilterOn ? <EmptyState
-          title="You haven't saved any fragrances yet."
-          description="Tap the heart icon on any product to save it here."
-          action={<Button variant="text" onClick={() => setWishlistFilterOn(false)}>Show all fragrances</Button>}
-        /> : <EmptyState
-          title="No fragrances matched your filters."
-          description="Try a different note, family or spelling."
-          action={<Button variant="text" onClick={clearFilters}>Clear filters</Button>}
-        >
-          {/* Real recovery path, not a dead end: the same best-sellers
-              data already shown on the homepage, never a fabricated
-              "you might also like" guess. */}
-          {bestSellers.length > 0 && <div className="no-results-recovery">
-            <p className="overline dark">Popular right now</p>
-            <div className="rail-row">
-              {bestSellers.map((product) => <ProductCard
-                key={product.id}
-                product={product}
-                size="rail"
-                mutating={mutating}
-                wishlisted={wishlist.includes(product.id)}
-                onToggleWishlist={toggleWishlist}
-                onOpen={openProduct}
-                onQuickAdd={addBottle}
-              />)}
-            </div>
-          </div>}
-        </EmptyState>}
-        {recentlyViewedProducts.length > 0 && <div className="recently-viewed-rail">
-          <p className="overline dark">Recently viewed</p>
-          <div className="rail-row">
-            {recentlyViewedProducts.map((product) => <ProductCard
-              key={product.id}
-              product={product}
-              size="rail"
-              mutating={mutating}
-              wishlisted={wishlist.includes(product.id)}
-              onToggleWishlist={toggleWishlist}
-              onOpen={openProduct}
-              onQuickAdd={addBottle}
-            />)}
-          </div>
-        </div>}
+          activeFilterCount={activeFilterCount} onClearFacets={clearFilterFacets} onClearAll={clearFilters}
+          filtered={filtered} visibleCount={visibleCount} onShowMore={() => setVisibleCount((count) => count + 12)}
+          productsLoading={productsLoading} productsError={productsError}
+          mutating={mutating} wishlist={wishlist} toggleWishlist={toggleWishlist} openProduct={openProduct} addBottle={addBottle}
+          bestSellers={bestSellers}
+          recentlyViewedProducts={recentlyViewedProducts}
+          filterDrawerOpen={filterDrawerOpen} onOpenFilters={() => setFilterDrawerOpen(true)} onCloseFilters={() => setFilterDrawerOpen(false)} filterDrawerDialogRef={filterDrawerDialogRef}
+        />
       </section>
 
       <section className="trust-row" aria-label="Store commitments">
@@ -1161,15 +1049,6 @@ function App() {
             onQuickAdd={addBottle}
           />)}
         </div>}
-      </section>
-
-      <section className="mood-section" data-reveal>
-        <div className="section-intro"><p className="overline dark">Shop by mood</p><h2>Find the fragrance for the moment.</h2></div>
-        <div className="mood-grid">
-          {MOOD_TILES.map((mood) => <button key={mood.label} className={`mood-tile tone-bg-${mood.tone}`} onClick={() => shopByTerm(mood.label)}>
-            <span>{mood.label}</span>
-          </button>)}
-        </div>
       </section>
 
       <section id="testimonials" className="testimonials-section" data-reveal>

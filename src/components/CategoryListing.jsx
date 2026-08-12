@@ -29,23 +29,23 @@ function FilterOption({ active, onClick, children }) {
   );
 }
 
-// The Men/Women product-listing page (H-09): a real sidebar-filter PLP
-// reached from the entry gateway or /men /women directly, replacing the
-// earlier editorial hub concept entirely - this receives the exact same
-// filter state/handlers App.jsx already threads through the homepage's own
-// Collection section (family/brand/price/availability/size/occasion/
-// concentration/discovery/sort/search), just laid out with every facet in
-// a left sidebar instead of a horizontal bar. Gender itself isn't exposed
-// as a filter here - it's already the page's own identity, set by which
-// route brought the shopper here.
+// The product-listing page (H-09/H-10): a real sidebar-filter PLP used for
+// both /men /women (a fixed pageGender - a real route, its own identity,
+// Gender isn't a filter there) and the general "All Fragrances" homepage
+// listing (pageGender is null - Gender becomes a real sidebar facet like
+// any other, same real tag-derived data FilterBar used to expose). Every
+// other facet (family/brand/price/availability/size/occasion/
+// concentration/discovery/sort/search) is identical either way - only the
+// heading and whether Gender appears in the sidebar change.
 export default function CategoryListing({
-  gender,
+  pageGender,
   searchInputRef, search, onSearchChange, searchSuggestions = [], onSelectSuggestion,
   family, familyOptions, onFamilyChange,
   brand, brandOptions, onBrandChange,
   priceBucket, onPriceBucketChange,
   availabilityOnly, onAvailabilityChange,
   sizeFilter, sizeOptions, onSizeChange,
+  gender, genderOptions = [], onGenderChange,
   occasion, occasionOptions = [], onOccasionChange,
   concentration, concentrationOptions = [], onConcentrationChange,
   newArrivalOnly, onNewArrivalChange,
@@ -57,6 +57,7 @@ export default function CategoryListing({
   productsLoading, productsError,
   mutating, wishlist, toggleWishlist, openProduct, addBottle,
   bestSellers = [],
+  recentlyViewedProducts = [],
   filterDrawerOpen, onOpenFilters, onCloseFilters, filterDrawerDialogRef
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -66,7 +67,7 @@ export default function CategoryListing({
   return (
     <div className="category-listing">
       <div className="category-listing-head">
-        <h1>{gender}'s Fragrances <span className="category-count">({filtered.length})</span></h1>
+        <h1>{pageGender ? `${pageGender}'s Fragrances` : 'All Fragrances'} <span className="category-count">({filtered.length})</span></h1>
         <label className="search-field category-search">
           <span className="sr-only">Search fragrances</span>
           <Icon name="search"/>
@@ -119,6 +120,13 @@ export default function CategoryListing({
             <FilterOption active={newArrivalOnly} onClick={() => onNewArrivalChange(!newArrivalOnly)}>New Arrivals</FilterOption>
             <FilterOption active={onSaleOnly} onClick={() => onOnSaleChange(!onSaleOnly)}>On Sale</FilterOption>
           </FilterGroup>
+
+          {!pageGender && genderOptions.length > 0 && (
+            <FilterGroup label="Gender">
+              <FilterOption active={gender === 'All'} onClick={() => onGenderChange('All')}>All</FilterOption>
+              {genderOptions.map((item) => <FilterOption key={item} active={gender === item} onClick={() => onGenderChange(item)}>{item}</FilterOption>)}
+            </FilterGroup>
+          )}
 
           <FilterGroup label="Fragrance Family">
             <FilterOption active={family === 'All'} onClick={() => onFamilyChange('All')}>All</FilterOption>
@@ -204,6 +212,22 @@ export default function CategoryListing({
         </div>
       </div>
 
+      {recentlyViewedProducts.length > 0 && <div className="recently-viewed-rail">
+        <p className="overline dark">Recently viewed</p>
+        <div className="rail-row">
+          {recentlyViewedProducts.map((product) => <ProductCard
+            key={product.id}
+            product={product}
+            size="rail"
+            mutating={mutating}
+            wishlisted={wishlist.includes(product.id)}
+            onToggleWishlist={toggleWishlist}
+            onOpen={openProduct}
+            onQuickAdd={addBottle}
+          />)}
+        </div>
+      </div>}
+
       {filterDrawerOpen && <FilterDrawer
         dialogRef={filterDrawerDialogRef}
         onClose={onCloseFilters}
@@ -212,6 +236,7 @@ export default function CategoryListing({
         priceBucket={priceBucket} onPriceBucketChange={onPriceBucketChange}
         availabilityOnly={availabilityOnly} onAvailabilityChange={onAvailabilityChange}
         sizeFilter={sizeFilter} sizeOptions={sizeOptions} onSizeChange={onSizeChange}
+        {...(!pageGender ? { gender, genderOptions, onGenderChange } : {})}
         occasion={occasion} occasionOptions={occasionOptions} onOccasionChange={onOccasionChange}
         concentration={concentration} concentrationOptions={concentrationOptions} onConcentrationChange={onConcentrationChange}
         newArrivalOnly={newArrivalOnly} onNewArrivalChange={onNewArrivalChange}
