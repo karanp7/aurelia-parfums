@@ -881,6 +881,25 @@ function App() {
     return { type: null, product: null };
   }, [cart, products, discoveryProduct]);
 
+  // General "You may also like" cart rail (distinct from the narrower,
+  // discovery-set-specific `crossSell` above) - real family-based
+  // similarity, the same logic already driving the Product Detail Page's
+  // own "You may also like" rail (see relatedProducts), just keyed off
+  // every family already in the bag instead of one active product. Never
+  // a fabricated "customers also bought" list - no real purchase-history
+  // data exists in this store to back one.
+  const cartCrossSell = useMemo(() => {
+    if (!cart?.lines?.length) return [];
+    const cartHandles = new Set(cart.lines.map((line) => line.handle).filter(Boolean));
+    const cartFamilies = new Set(
+      cart.lines
+        .map((line) => products.find((product) => product.handle === line.handle)?.family)
+        .filter(Boolean)
+    );
+    if (!cartFamilies.size) return [];
+    return products.filter((product) => !cartHandles.has(product.handle) && cartFamilies.has(product.family)).slice(0, 3);
+  }, [cart, products]);
+
   const focusSearch = () => goToSection('collection', { focusSearch: true });
   // Split so the mobile filter drawer's "Clear all" can reset just the
   // filter facets without also wiping the search box it doesn't contain
@@ -1243,6 +1262,21 @@ function App() {
             placeholder="Optional message for the recipient"
           />
         </div>
+        {cartCrossSell.length > 0 && <div className="cart-cross-sell">
+          <p className="overline dark">You may also like</p>
+          <div className="rail-row">
+            {cartCrossSell.map((product) => <ProductCard
+              key={product.id}
+              product={product}
+              size="rail"
+              mutating={mutating}
+              wishlisted={wishlist.includes(product.id)}
+              onToggleWishlist={toggleWishlist}
+              onOpen={(clickedProduct) => { setCartOpen(false); openProduct(clickedProduct); }}
+              onQuickAdd={addBottle}
+            />)}
+          </div>
+        </div>}
         {crossSell.product && <div className="smart-pair"><p className="overline dark">A useful next step</p>{crossSell.type === 'discovery' ? <><h3>Not completely sure?</h3><p>Try three matches before opening another full bottle. The {money(crossSell.product.price)} becomes bottle credit.</p><button disabled={mutating} onClick={() => addDiscoverySet(products.slice(0,3))}>Add discovery set — {money(crossSell.product.price)}</button></> : <><h3>{crossSell.product.name}</h3><p>Your discovery set can lead into this full bottle once you have worn it at home.</p><button disabled={mutating} onClick={() => addBottle(crossSell.product, crossSell.product.sizes[0]?.label)}>Add {crossSell.product.sizes[0]?.label} — {money(crossSell.product.price)}</button></>}</div>}
         <div className="checkout"><div><span>Subtotal</span><strong>{money(subtotal)}</strong></div><small>Taxes and eligible ground-shipping rates are calculated at checkout.</small><div className="payment-badges"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span><span>Shop Pay</span></div><Button href={cart?.checkoutUrl || undefined} style={{opacity: cart?.checkoutUrl ? 1 : .5, pointerEvents: cart?.checkoutUrl ? 'auto' : 'none'}}>Checkout <Icon name="arrowRight"/></Button><p>Secure checkout is hosted by Shopify. No account required.</p></div>
       </>}
