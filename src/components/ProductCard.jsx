@@ -57,7 +57,16 @@ export default function ProductCard({ product, mutating, wishlisted, onToggleWis
       {eyebrow && <span className="card-eyebrow">{eyebrow}</span>}
       <div className="product-image">
         <button type="button" className="product-image-trigger" onClick={() => onOpen(product)} aria-label={`View ${product.name}`}>
-          <div className={`product-backdrop tone-bg-${product.tone}`} />
+          {/* The decorative tone-bg wash is only for the no-photo fallback
+              (PerfumeBottle's own drawn bottle scene needs a colored field
+              to read as intentional) - a real product photo already has
+              its own studio-shot background, so layering a bright color
+              behind it read as a thick, un-luxurious mat/frame around a
+              small centered sticker. Real photos get the same plain
+              --stage neutral the Product Detail Page's own gallery
+              already uses (ProductDetailPage never applies this backdrop
+              at all), instead of inventing a second treatment. */}
+          {!product.image && <div className={`product-backdrop tone-bg-${product.tone}`} />}
           <div className="card-badges">
             {product.badge && <Badge>{product.badge}</Badge>}
             {product.price >= FREE_SHIPPING_THRESHOLD && <Badge tone="shipping">Free Shipping</Badge>}
