@@ -58,6 +58,7 @@ export default function CategoryListing({
   mutating, wishlist, toggleWishlist, openProduct, addBottle,
   bestSellers = [],
   recentlyViewedProducts = [],
+  wishlistFilterOn = false, onClearWishlistFilter,
   filterDrawerOpen, onOpenFilters, onCloseFilters, filterDrawerDialogRef
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -188,7 +189,11 @@ export default function CategoryListing({
             {visibleCount < filtered.length && <div className="show-more-row">
               <Button variant="secondary" onClick={onShowMore}>Show more ({filtered.length - visibleCount} remaining)</Button>
             </div>}
-          </> : <EmptyState
+          </> : wishlistFilterOn ? <EmptyState
+            title="You haven't saved any fragrances yet."
+            description="Tap the heart icon on any product to save it here."
+            action={<Button variant="text" onClick={onClearWishlistFilter}>Show all fragrances</Button>}
+          /> : <EmptyState
             title="No fragrances matched your filters."
             description="Try a different note, family or spelling."
             action={<Button variant="text" onClick={onClearAll}>Clear filters</Button>}

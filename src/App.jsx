@@ -1002,6 +1002,7 @@ function App() {
         productsLoading={productsLoading} productsError={productsError}
         mutating={mutating} wishlist={wishlist} toggleWishlist={toggleWishlist} openProduct={openProduct} addBottle={addBottle}
         bestSellers={bestSellers}
+        wishlistFilterOn={wishlistFilterOn} onClearWishlistFilter={() => setWishlistFilterOn(false)}
         filterDrawerOpen={filterDrawerOpen} onOpenFilters={() => setFilterDrawerOpen(true)} onCloseFilters={() => setFilterDrawerOpen(false)} filterDrawerDialogRef={filterDrawerDialogRef}
       /> : <>
       {/* Collection now leads the shop homepage (H-07): the entry gateway
@@ -1036,6 +1037,7 @@ function App() {
           mutating={mutating} wishlist={wishlist} toggleWishlist={toggleWishlist} openProduct={openProduct} addBottle={addBottle}
           bestSellers={bestSellers}
           recentlyViewedProducts={recentlyViewedProducts}
+          wishlistFilterOn={wishlistFilterOn} onClearWishlistFilter={() => setWishlistFilterOn(false)}
           filterDrawerOpen={filterDrawerOpen} onOpenFilters={() => setFilterDrawerOpen(true)} onCloseFilters={() => setFilterDrawerOpen(false)} filterDrawerDialogRef={filterDrawerDialogRef}
         />
       </section>
