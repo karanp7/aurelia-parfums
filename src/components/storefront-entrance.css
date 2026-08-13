@@ -1,0 +1,139 @@
+/* Immersive storefront entrance (preview route: /entrance).
+   Scoped entirely under .experience per the integration kit's own CSS
+   isolation warning - nothing here is a bare/global selector, and the
+   three custom properties the original template declared on :root
+   (--ink/--cream/--red) are declared on .experience instead, reusing
+   this site's own real tokens (var(--ink), var(--paper), var(--wine))
+   with the template's own values only as a fallback. Declaring on :root
+   would have been a real, silent risk: custom properties aren't scoped
+   by file, so once this stylesheet loaded once in the SPA it would keep
+   overriding the whole site's --ink for every other page for the rest
+   of the session, not just this route. */
+.experience{
+  --se-ink: var(--ink, #171713);
+  --se-cream: var(--paper, #efe9dc);
+  --se-red: var(--wine, #9e3628);
+}
+.experience,.experience *{box-sizing:border-box}
+.experience{font-family:'DM Sans',Arial,sans-serif;color:var(--se-ink)}
+.experience button{font:inherit}
+.experience{min-height:100svh;background:var(--se-cream);overflow:hidden;position:relative}
+.experience .topbar{height:70px;padding:0 clamp(22px,4vw,64px);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0002;position:relative;z-index:20}
+.experience .wordmark{font-size:15px;font-weight:800;letter-spacing:.03em}
+.experience .wordmark span{font-weight:400}
+.experience .topbar p,.experience .mode{font:600 10px/1 monospace;letter-spacing:.1em;text-transform:uppercase}
+.experience .mode{display:flex;align-items:center;gap:8px}
+.experience .mode i{width:7px;height:7px;background:var(--se-red);border-radius:50%;box-shadow:0 0 0 4px color-mix(in srgb, var(--se-red) 11%, transparent)}
+
+.experience .street-view{min-height:calc(100svh - 70px);display:grid;grid-template-columns:minmax(250px,.55fr) minmax(620px,1.45fr);align-items:end;max-width:1500px;margin:auto;padding:0 clamp(22px,4vw,64px);position:relative;perspective:1200px}
+.experience .building-copy{align-self:center;padding:0 34px 5vh 0}
+.experience .kicker{font:600 10px/1 monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--se-red);margin:0 0 25px}
+.experience .building-copy h1{font:400 clamp(76px,10vw,160px)/.72 'Italiana',Georgia,serif;letter-spacing:-.02em;margin:0}
+.experience .hint{max-width:230px;font-size:14px;line-height:1.55;color:#696559;margin:38px 0 0}
+
+.experience .facade{height:min(75vh,720px);min-height:540px;background:#bbb19f;border-inline:10px solid #9c927f;position:relative;display:grid;grid-template-columns:1fr .76fr 1fr;align-items:end;padding:118px 34px 28px;gap:22px;box-shadow:0 30px 70px #0003}
+.experience .facade:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 58px,#50463722 59px 60px),repeating-linear-gradient(90deg,transparent 0 134px,#50463714 135px 136px)}
+.experience .awning{height:58px;position:absolute;top:0;left:-10px;right:-10px;background:#eee5d3;display:flex;overflow:hidden;filter:drop-shadow(0 12px 8px #0003);z-index:3}
+.experience .awning i{flex:1;background:var(--se-red);transform:skewX(-8deg);border-right:3px solid #eee5d3}
+.experience .awning i:nth-child(even){background:#eee5d3}
+.experience .store-sign{position:absolute;top:74px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;z-index:2}
+.experience .store-sign strong{font:500 28px 'Italiana',Georgia,serif;letter-spacing:.08em}
+.experience .store-sign small{font:600 7px monospace;letter-spacing:.1em}
+.experience .window,.experience .entrance{height:78%;position:relative;z-index:2}
+.experience .window{background:linear-gradient(135deg,#cfe1dcaa,#3a4b4766);border:12px solid #38362f;border-bottom-width:18px;overflow:hidden;box-shadow:inset 0 0 50px #fff4}
+.experience .window:before{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,#ffe2ac28,transparent 45%),linear-gradient(90deg,transparent 49.5%,#1e1e1977 50%,transparent 50.5%)}
+.experience .shine{position:absolute;inset:-30% 45% -30% 24%;background:#fff2;transform:rotate(21deg)}
+.experience .window p{position:absolute;top:24px;left:24px;color:#f4eee2;font:500 11px/1.45 monospace;letter-spacing:.15em}
+.experience .plinth{position:absolute;bottom:0;left:20%;width:36%;height:28%;background:#d6c6ae}
+.experience .plinth.tall{height:42%;left:57%;width:28%}
+.experience .object{position:absolute;left:50%;bottom:90%;transform:translateX(-50%);display:block}
+.experience .bag{width:58px;height:58px;background:#7b3329;border-radius:8px 8px 3px 3px}
+.experience .bag:before{content:"";position:absolute;width:28px;height:18px;border:5px solid #7b3329;border-bottom:0;border-radius:20px 20px 0 0;left:15px;top:-18px}
+.experience .vase{width:38px;height:62px;background:#d3b877;border-radius:8px 8px 18px 18px}
+.experience .shoe{width:76px;height:32px;background:#d9d0bf;border-radius:50% 10px 13px 14px;transform:translateX(-50%) rotate(-8deg)}
+.experience .shelf{position:absolute;left:14%;right:14%;top:40%;height:6px;background:#292a25;display:flex;align-items:flex-end;justify-content:space-around}
+.experience .shelf i{width:18px;height:42px;background:#b1a071}
+.experience .shelf i:nth-child(even){height:31px;background:#8b4a39}
+
+.experience .entrance{border:0;background:none;padding:0;cursor:pointer}
+.experience .entrance:focus-visible{outline:3px solid #fff;outline-offset:4px}
+.experience .door-frame{position:absolute;inset:0;background:#171713;border:13px solid #302f2a;display:flex;overflow:hidden;perspective:900px}
+.experience .door{width:50%;height:100%;background:linear-gradient(#4a5b576b,#121d1bc7);border:4px solid #272a25;position:relative;z-index:3;transition:transform 1.25s cubic-bezier(.18,.83,.26,1)}
+.experience .door-left{transform-origin:left}
+.experience .door-right{transform-origin:right}
+.experience .door>i{position:absolute;inset:8px;border:1px solid #fff4;background:linear-gradient(112deg,transparent 32%,#fff3 34%,transparent 39%)}
+.experience .door>b{position:absolute;top:48%;width:5px;height:40px;background:#d3bd8b}
+.experience .door-left b{right:11px}
+.experience .door-right b{left:11px}
+.experience .inside-glow{position:absolute;inset:0;background:linear-gradient(#d7c6a4,#5e5547);display:block}
+.experience .inside-glow i{position:absolute;top:4%;left:28%;right:28%;height:9px;background:#fff4ca;box-shadow:0 0 25px #fff0b1}
+.experience .inside-glow b{position:absolute;top:32%;left:50%;transform:translateX(-50%);font:600 8px monospace;letter-spacing:.2em;color:#fff4d5}
+.experience .enter-label{position:absolute;left:50%;bottom:-54px;transform:translateX(-50%);white-space:nowrap;color:#eee8dc;font:600 10px monospace;letter-spacing:.1em;text-transform:uppercase;display:flex;gap:8px;align-items:center;background:#24231f;padding:12px 15px}
+.experience .enter-label i{width:6px;height:6px;background:#d4b36d;border-radius:50%;animation:se-pulse 1.5s infinite}
+.experience .enter-label b{font-size:16px;color:#d4b36d}
+.experience .base-line{height:22px;background:#302e28;position:absolute;left:0;right:0;bottom:20px}
+.experience .pavement{height:8vh;grid-column:2;display:flex;background:#aaa08f;transform:perspective(300px) rotateX(12deg);transform-origin:top}
+.experience .pavement i{flex:1;border-right:1px solid #3c373033;transform:skewX(-25deg)}
+.experience .scroll-note{position:absolute;left:30px;bottom:24px;font:600 8px monospace;letter-spacing:.15em;writing-mode:vertical-rl}
+.experience .scroll-note i{margin-top:10px;color:var(--se-red)}
+
+.experience .interior{position:fixed;inset:0;background:#1b1a16;color:#eee8dc;z-index:40;display:grid;place-items:center;opacity:0;visibility:hidden;transition:opacity .7s ease .15s;overflow:hidden}
+.experience .interior:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#161510 0 12%,transparent 31% 69%,#161510 88%),linear-gradient(#b9a77f 0 3%,#38342b 3% 72%,#25241e 72%);opacity:.85}
+.experience .interior-lights{position:absolute;top:7%;left:15%;right:15%;display:flex;justify-content:space-between}
+.experience .interior-lights i{width:13%;height:8px;background:#ffedbd;box-shadow:0 0 45px #ffe7a5}
+.experience .arrival-copy{text-align:center;position:relative;z-index:2}
+.experience .arrival-copy>p:first-child{font:600 9px monospace;letter-spacing:.22em;color:#d1b67b}
+.experience .arrival-copy h2{font:400 clamp(60px,8vw,118px)/.86 'Italiana',Georgia,serif;letter-spacing:-.03em;margin:24px 0}
+.experience .arrival-copy>p{color:#aaa394;font-size:14px}
+.experience .arrival-actions{margin-top:30px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.experience .arrival-actions button{font:600 9px monospace;letter-spacing:.1em;text-transform:uppercase;padding:15px 22px;cursor:pointer;border-radius:999px}
+.experience .btn-primary{border:1px solid var(--se-red);background:var(--se-red);color:#fff4e8;transition:transform .25s ease,box-shadow .25s ease}
+.experience .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 24px #0004}
+.experience .btn-secondary{border:1px solid #777063;background:transparent;color:#eee8dc}
+.experience .transition-flash{position:fixed;inset:0;background:#fff6df;z-index:35;opacity:0;pointer-events:none}
+
+.experience.is-entering .door-left{transform:rotateY(-104deg)}
+.experience.is-entering .door-right{transform:rotateY(104deg)}
+.experience.is-entering .facade{animation:se-walkIn 2.1s cubic-bezier(.6,0,.4,1) forwards}
+.experience.is-entering .building-copy,.experience.is-entering .topbar,.experience.is-entering .scroll-note{animation:se-fadeAway .65s forwards}
+.experience.is-entering .transition-flash{animation:se-flash 2.1s forwards}
+.experience.is-inside .interior{opacity:1;visibility:visible}
+.experience.is-inside .arrival-copy{animation:se-arrive .8s both}
+
+@keyframes se-pulse{50%{opacity:.25;transform:scale(.7)}}
+@keyframes se-walkIn{65%{transform:translateZ(560px) scale(2.15)}100%{transform:translateZ(980px) scale(4);opacity:0}}
+@keyframes se-fadeAway{to{opacity:0}}
+@keyframes se-flash{0%,62%{opacity:0}82%{opacity:.82}100%{opacity:0}}
+@keyframes se-arrive{from{opacity:0;transform:translateY(30px)}}
+
+@media(max-width:900px){
+  .experience .topbar p{display:none}
+  .experience .street-view{display:block;padding:30px 16px 0}
+  .experience .building-copy{position:absolute;z-index:10;color:white;left:40px;top:80px;text-shadow:0 2px 20px #0007;pointer-events:none}
+  .experience .building-copy h1{font-size:82px}
+  .experience .hint{display:none}
+  .experience .facade{height:calc(100svh - 130px);min-height:600px;grid-template-columns:.7fr 1.1fr .7fr;padding-inline:14px;gap:10px}
+  .experience .window{border-width:7px}
+  .experience .window p{display:none}
+  .experience .pavement,.experience .scroll-note{display:none}
+  .experience .enter-label{bottom:14px;z-index:6}
+  .experience .plinth{display:none}
+}
+@media(max-width:560px){
+  .experience .topbar{height:58px}
+  .experience .mode{font-size:0}
+  .experience .street-view{padding-top:18px}
+  .experience .facade{height:calc(100svh - 76px);min-height:560px;grid-template-columns:.35fr 1.3fr .35fr;padding-inline:8px;gap:6px}
+  .experience .building-copy{left:27px;top:58px}
+  .experience .building-copy h1{font-size:68px}
+  .experience .kicker{font-size:8px}
+  .experience .window{border-width:5px}
+  .experience .store-sign small{display:none}
+  .experience .entrance{height:72%}
+  .experience .window{height:65%}
+  .experience .arrival-copy h2{font-size:58px}
+  .experience .arrival-actions{flex-direction:column;align-items:stretch;padding:0 24px}
+}
+@media(prefers-reduced-motion:reduce){
+  .experience *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}

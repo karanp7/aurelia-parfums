@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'rea
 import { useNavigate, useLocation, useSearchParams, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import EntryGateway from './components/EntryGateway.jsx';
+import StorefrontEntrance from './components/StorefrontEntrance.jsx';
 import CategoryListing from './components/CategoryListing.jsx';
 import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
@@ -483,6 +484,11 @@ function App() {
     setHasEntered(true);
     if (choice === 'men') { setGender('Men'); setFamily('All'); navigate('/men'); }
     else if (choice === 'women') { setGender('Women'); setFamily('All'); navigate('/women'); }
+    // Storefront entrance preview's "Browse All Fragrances" - lands on the
+    // real, unfiltered All Fragrances listing, same real gateway
+    // infrastructure (session marking, back-button-to-gateway behavior)
+    // as the men/women/gifts choices above.
+    else if (choice === 'all') { setGender('All'); setFamily('All'); navigate('/'); }
     else if (choice === 'gifts') {
       goToSection('gifts');
       navigate('/?_e=1');
@@ -940,6 +946,17 @@ function App() {
         <p>Set <code>SHOPIFY_STORE_DOMAIN</code> and <code>SHOPIFY_STOREFRONT_ACCESS_TOKEN</code> — in Vercel's Project Settings for production, or in a local <code>.env.local</code> for development (see <code>.env.example</code>) — then reload.</p>
       </main>
     </div>;
+  }
+
+  // Preview route for the immersive door-entrance experience - not the
+  // live homepage yet (that's still the gateway below). Standalone full-
+  // viewport takeover, same reasoning as the gateway/setup-notice early
+  // returns above: no nav/cart/footer chrome from the real shop shell.
+  // "Browse All Fragrances" hands off to the real, existing gateway flow
+  // (skips straight to the shop) rather than the dead-end placeholder the
+  // original integration kit shipped with.
+  if (location.pathname === '/entrance') {
+    return <StorefrontEntrance onEnterShop={() => enterSite('all')} />;
   }
 
   // The entry gateway only intercepts a fresh session's landing on "/" -
