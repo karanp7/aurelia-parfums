@@ -18,12 +18,17 @@ import React from 'react';
 // the light nav bar, footer reads light on --graphite, purely because
 // each parent already sets its own text color) - "light"/"dark" are for
 // a future case that needs to override that regardless of context.
-export default function Logo({ mark = null, variant = 'inline', theme = 'auto', className = '' }) {
+// `onClick` is optional (the Shopify-not-configured fallback screen has no
+// real app state to navigate within, so it just keeps the plain #top
+// anchor) - everywhere else passes a real handler, since href="#top" alone
+// only scrolls within the current page and never actually took a shopper
+// on /men, /women or a product page back to the shop's own homepage.
+export default function Logo({ mark = null, variant = 'inline', theme = 'auto', className = '', onClick }) {
   const classes = ['logo', `logo--${variant}`, theme !== 'auto' ? `logo--${theme}` : null, className]
     .filter(Boolean)
     .join(' ');
   return (
-    <a className={classes} href="#top">
+    <a className={classes} href="#top" onClick={onClick}>
       {mark && <span className="logo-mark">{mark}</span>}
       <span className="logo-text">AURELIA<small>PARFUMS</small></span>
     </a>

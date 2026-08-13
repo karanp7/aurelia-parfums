@@ -400,6 +400,26 @@ function App() {
   useReveal(activeProduct ? 'product' : categoryGender ? categoryGender : (!hasEntered ? 'gateway' : 'home'));
   const closeProduct = () => navigate('/');
   const openProduct = (product) => navigate(`/products/${product.handle}`);
+  // Clicking the logo means "take me back to the shop's homepage" - it was
+  // just href="#top" (a same-page scroll), which only ever worked if you
+  // were already on '/'; from /men, /women or a product page it silently
+  // did nothing. navigate('/') alone still isn't enough leaving a category
+  // page: the scroll-to-top effect above only fires when *entering* a
+  // product/category page (handle/categoryGender becoming truthy), not
+  // leaving one, so a shopper scrolled down on /men clicking the logo
+  // would land on '/' still scrolled down - window.scrollTo(0,0) here
+  // covers exactly that gap.
+  const goToHome = (event) => {
+    event?.preventDefault();
+    if (activeProduct) { closeProduct(); return; }
+    // Same reasoning as goToAllFragrances below: gender is real, persistent
+    // filter state forced to Men/Women while on /men or /women - the logo
+    // meaning "the shop's real homepage" implies unfiltered, same as
+    // clicking "All Fragrances" itself, not a second, silently-filtered
+    // homepage.
+    if (categoryGender) { setGender('All'); navigate('/'); window.scrollTo(0, 0); return; }
+    document.getElementById('top')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     document.title = activeProduct
@@ -939,7 +959,7 @@ function App() {
     </div>
     <header className="nav">
       <button className="nav-icon" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Icon name="menu"/></button>
-      <Logo/>
+      <Logo onClick={goToHome}/>
       <nav aria-label="Primary">
         <ShopDropdown
           open={shopMenuOpen}
@@ -1097,7 +1117,7 @@ function App() {
     </main>
 
     <footer className="site-footer">
-      <div><Logo className="footer-logo"/><h2>Choose slowly.<br/><em>Wear confidently.</em></h2></div>
+      <div><Logo className="footer-logo" onClick={goToHome}/><h2>Choose slowly.<br/><em>Wear confidently.</em></h2></div>
       <div className="footer-links"><a href="#collection" onClick={(event) => { event.preventDefault(); goToAllFragrances(); }}>Full bottles</a><a href="#gifts" onClick={(event) => { event.preventDefault(); goToSection('gifts'); }}>Gifts</a><button onClick={() => setQuizOpen(true)}>Scent finder</button><a href="#policies" onClick={(event) => { event.preventDefault(); goToSection('policies'); }}>Shipping &amp; returns</a></div>
       <form className="footer-signup" onSubmit={(event) => { event.preventDefault(); if (!signupEmail.trim()) return; setSignupDone(true); setSignupEmail(''); }}>
         <label htmlFor="footer-email">Exclusive launches, private offers and personalized recommendations</label>
