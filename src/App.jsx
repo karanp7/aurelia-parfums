@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'rea
 import { useNavigate, useLocation, useSearchParams, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import EntryGateway from './components/EntryGateway.jsx';
-import StorefrontEntrance from './components/StorefrontEntrance.jsx';
+import StorefrontExperience from './components/StorefrontExperience.jsx';
 import CategoryListing from './components/CategoryListing.jsx';
 import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
@@ -948,15 +948,17 @@ function App() {
     </div>;
   }
 
-  // Preview route for the immersive door-entrance experience - not the
-  // live homepage yet (that's still the gateway below). Standalone full-
-  // viewport takeover, same reasoning as the gateway/setup-notice early
-  // returns above: no nav/cart/footer chrome from the real shop shell.
-  // "Browse All Fragrances" hands off to the real, existing gateway flow
-  // (skips straight to the shop) rather than the dead-end placeholder the
-  // original integration kit shipped with.
+  // Preview route for the immersive storefront experience (entrance →
+  // directory → themed shop floor) - not the live homepage yet (that's
+  // still the gateway below). Standalone full-viewport takeover, same
+  // reasoning as the gateway/setup-notice early returns above: no nav/
+  // cart/footer chrome from the real shop shell. Real product data and
+  // real handlers throughout (see StorefrontExperience.jsx's own header
+  // comment) - "View this piece" hands off to the real PDP (real add-to-
+  // cart/checkout live there), so there's no dead end even though this
+  // preview's own shop floor has no cart of its own.
   if (location.pathname === '/entrance') {
-    return <StorefrontEntrance onEnterShop={() => enterSite('all')} />;
+    return <StorefrontExperience products={products} wishlist={wishlist} onToggleWishlist={toggleWishlist} onViewProduct={openProduct} />;
   }
 
   // The entry gateway only intercepts a fresh session's landing on "/" -
