@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'rea
 import { useNavigate, useLocation, useSearchParams, matchPath } from 'react-router-dom';
 import PerfumeBottle from './components/PerfumeBottle.jsx';
 import EntryGateway from './components/EntryGateway.jsx';
-import StorefrontExperience from './components/StorefrontExperience.jsx';
+import Storefront from './components/Storefront.jsx';
+import AureliaPromise from './components/AureliaPromise.jsx';
 import CategoryListing from './components/CategoryListing.jsx';
 import Logo from './components/Logo.jsx';
 import Button from './components/Button.jsx';
@@ -398,7 +399,7 @@ function App() {
   // sections - it's a utilitarian filter/grid page, not a scroll-reveal
   // one - so unlike the earlier editorial hub, no products-readiness key
   // suffix is needed here.)
-  useReveal(activeProduct ? 'product' : categoryGender ? categoryGender : (!hasEntered ? 'gateway' : 'home'));
+  useReveal(activeProduct ? 'product' : categoryGender ? categoryGender : (!hasEntered ? 'gateway' : location.pathname));
   const closeProduct = () => navigate('/');
   const openProduct = (product) => navigate(`/products/${product.handle}`);
   // Clicking the logo means "take me back to the shop's homepage" - it was
@@ -441,25 +442,31 @@ function App() {
   // below scrolls to it (deferred a frame so the freshly-mounted DOM has
   // actually painted before `scrollIntoView` measures it).
   const pendingScrollRef = useRef(null);
+  // The homepage sections these ids point at (#collection, #best-sellers,
+  // #gifts, #policies) live on /entrance now, not "/" - see the new
+  // Storefront homepage below. Mounted exactly when we're actually on
+  // /entrance, past the gateway, with no product/category page layered
+  // on top (categoryGender/activeProduct are always null on /entrance
+  // anyway - kept here for clarity, not because they can differ from it).
+  const sectionsMounted = location.pathname === '/entrance' && hasEntered && !activeProduct && !categoryGender;
   const goToSection = (id, options) => {
-    if (activeProduct || !hasEntered || categoryGender) {
+    if (!sectionsMounted) {
       pendingScrollRef.current = { id, ...options };
-      if (activeProduct) closeProduct();
-      else if (categoryGender) navigate('/');
+      if (location.pathname !== '/entrance') navigate('/entrance');
       return;
     }
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
     if (options?.focusSearch) window.requestAnimationFrame(() => searchInputRef.current?.focus());
   };
   useEffect(() => {
-    if (activeProduct || !hasEntered || categoryGender || !pendingScrollRef.current) return;
+    if (!sectionsMounted || !pendingScrollRef.current) return;
     const { id, focusSearch: shouldFocusSearch } = pendingScrollRef.current;
     pendingScrollRef.current = null;
     requestAnimationFrame(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
       if (shouldFocusSearch) searchInputRef.current?.focus();
     });
-  }, [activeProduct, hasEntered, categoryGender]);
+  }, [sectionsMounted]);
 
   // The three entry-gateway choices. Men/Women set the real, tag-derived
   // gender filter (see deriveGender in shopifyProducts.js) - applied once
@@ -484,16 +491,39 @@ function App() {
     setHasEntered(true);
     if (choice === 'men') { setGender('Men'); setFamily('All'); navigate('/men'); }
     else if (choice === 'women') { setGender('Women'); setFamily('All'); navigate('/women'); }
-    // Storefront entrance preview's "Browse All Fragrances" - lands on the
-    // real, unfiltered All Fragrances listing, same real gateway
-    // infrastructure (session marking, back-button-to-gateway behavior)
-    // as the men/women/gifts choices above.
-    else if (choice === 'all') { setGender('All'); setFamily('All'); navigate('/'); }
+    // "Browse All Fragrances" - lands on the real, unfiltered All
+    // Fragrances listing at /entrance (the relocated shop homepage - see
+    // the new boutique homepage at "/"), same real gateway infrastructure
+    // (session marking, back-button-to-gateway behavior) as the
+    // men/women/gifts choices above.
+    else if (choice === 'all') { setGender('All'); setFamily('All'); navigate('/entrance'); }
     else if (choice === 'gifts') {
       goToSection('gifts');
-      navigate('/?_e=1');
-      navigate('/', { replace: true });
+      navigate('/entrance?_e=1');
+      navigate('/entrance', { replace: true });
     }
+  };
+
+  // Same "mark the gateway seen" side effect enterSite already does,
+  // exposed standalone for the new boutique homepage's search/bag/quiz
+  // actions: those hand off to the real shop at /entrance, and shouldn't
+  // trip the gateway on the way there since the shopper already made a
+  // real choice by clicking something on the boutique page.
+  const enterShop = () => {
+    if (hasEntered) return;
+    gatewayEntryKeyRef.current = location.key;
+    sessionStorage.setItem(ENTRY_GATEWAY_KEY, '1');
+    setHasEntered(true);
+  };
+
+  // Boutique homepage's brand strip - reuses the real, catalog-derived
+  // brandOptions (same source CategoryListing's own brand filter uses),
+  // never a fixed designer list, so a house that doesn't exist in this
+  // store's real catalog can never appear as a dead link.
+  const shopBrand = (house) => {
+    enterShop();
+    setGender('All'); setFamily('All'); setBrand(house);
+    navigate('/entrance');
   };
 
   // Pressing Back enough times to land back on the exact entry the
@@ -948,24 +978,44 @@ function App() {
     </div>;
   }
 
-  // Preview route for the immersive storefront experience (entrance →
-  // directory → themed shop floor) - not the live homepage yet (that's
-  // still the gateway below). Standalone full-viewport takeover, same
-  // reasoning as the gateway/setup-notice early returns above: no nav/
-  // cart/footer chrome from the real shop shell. Real product data and
-  // real handlers throughout (see StorefrontExperience.jsx's own header
-  // comment) - "View this piece" hands off to the real PDP (real add-to-
-  // cart/checkout live there), so there's no dead end even though this
-  // preview's own shop floor has no cart of its own.
-  if (location.pathname === '/entrance') {
-    return <StorefrontExperience products={products} wishlist={wishlist} onToggleWishlist={toggleWishlist} onViewProduct={openProduct} />;
+  // The new real homepage - an architectural boutique front (Men/Women
+  // windows, doors, brand strip, real product bottles) adapted from an
+  // uploaded reference kit whose own homepage depended on one fixed
+  // photographed storefront image that was never supplied and can't be
+  // fabricated. What used to live at "/" - the entry gateway, then the
+  // full shop homepage once past it - moved to /entrance unchanged (see
+  // below); this replaces it as the site's front door. Standalone
+  // full-viewport render, same reasoning the old /entrance preview used:
+  // its own minimal real nav rather than the full shop chrome, since a
+  // boutique facade isn't the filter/cart-heavy shop page. Search/bag/
+  // quiz on it hand off to the real shop at /entrance (where those tools
+  // already live) rather than duplicating drawer/modal UI here.
+  if (location.pathname === '/') {
+    return <Storefront
+      products={products} wishlist={wishlist} onToggleWishlist={toggleWishlist} mutating={mutating}
+      onQuickAdd={addBottle} onViewProduct={openProduct}
+      brandOptions={brandOptions}
+      onShopMen={() => enterSite('men')} onShopWomen={() => enterSite('women')}
+      onShopBrand={shopBrand} onShopAll={() => enterSite('all')}
+      onGoToGifts={() => { enterShop(); goToSection('gifts'); }}
+      onOpenQuiz={() => { enterShop(); navigate('/entrance'); setQuizOpen(true); }}
+      onOpenSearch={() => { enterShop(); goToSection('collection', { focusSearch: true }); }}
+      onOpenCart={() => { enterShop(); navigate('/entrance'); setCartOpen(true); }}
+      onGoToPromise={() => navigate('/authenticity')}
+      itemCount={itemCount}
+    />;
   }
 
-  // The entry gateway only intercepts a fresh session's landing on "/" -
-  // a direct/shared link (a product page, or "/" with a query string
-  // already attached from a bookmark) skips straight to the shop, same as
-  // how most real "enter site" gateways behave.
-  if (!hasEntered && location.pathname === '/') {
+  if (location.pathname === '/authenticity') {
+    return <AureliaPromise onBack={() => navigate('/')} onShopAll={() => enterSite('all')} />;
+  }
+
+  // The site's real front door, relocated from "/" (see the new homepage
+  // above) - only intercepts a fresh session landing directly on
+  // /entrance now; a direct/shared link (a product page, or /entrance
+  // with a query string already attached from a bookmark) skips straight
+  // to the shop, same as before.
+  if (!hasEntered && location.pathname === '/entrance') {
     return <EntryGateway onSelect={enterSite} />;
   }
 
